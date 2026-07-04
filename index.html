@@ -567,7 +567,8 @@ function buildIndex(){
     const at=(rec.a||[]).map(a=>a.toLowerCase());
     const dt=rec.d?rec.d.toLowerCase():'';
     const rt=rec.r?rec.r.toLowerCase():'';
-    return{rec,i,ct,at,dt,rt};
+    const rtc=rt.replace(/\s+/g,'');
+    return{rec,i,ct,at,dt,rt,rtc};
   });
   allBrands=new Set();DATA.forEach(r=>Object.keys(r.b).forEach(b=>allBrands.add(b)));
   sortedBrands=BORDER.filter(b=>allBrands.has(b));
@@ -583,11 +584,11 @@ function renderPills(){
 }
 
 function matchRecord(entry,q){
-  const qn=norm(q),ql=q.toLowerCase();const mb=new Set();
+  const qn=norm(q),ql=q.toLowerCase();const qlc=ql.replace(/\s+/g,'');const mb=new Set();
   for(const tk of entry.ct)if(tk.n.includes(qn))mb.add(tk.brand);
   const ia=entry.at.some(a=>a.includes(ql));
   const id=entry.dt&&entry.dt.includes(ql);
-  const ir=entry.rt&&entry.rt.includes(ql);
+  const ir=(entry.rt&&entry.rt.includes(ql))||(entry.rtc&&qlc&&entry.rtc.includes(qlc));
   return{match:mb.size>0||ia||id||ir,mb:[...mb],ia:ia||id,ir};
 }
 
