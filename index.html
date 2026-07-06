@@ -698,8 +698,9 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
+console.log('FilterEQ version 65 - busqueda rosca sin espacios activa');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
-fetch('filterEQ_data.json').then(function(r){
+fetch('filterEQ_data.json?v=65').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }).then(function(data){
@@ -708,7 +709,7 @@ fetch('filterEQ_data.json').then(function(r){
   renderPills();renderPage();
   // Las imágenes se cargan aparte, en segundo plano, para que la búsqueda
   // esté disponible de inmediato sin esperar los ~23MB de fotos.
-  fetch('filterEQ_imgs.json').then(function(r){
+  fetch('filterEQ_imgs.json?v=65').then(function(r){
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }).then(function(imgs){
