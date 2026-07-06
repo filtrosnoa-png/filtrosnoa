@@ -567,7 +567,7 @@ function buildIndex(){
     const at=(rec.a||[]).map(a=>a.toLowerCase());
     const dt=rec.d?rec.d.toLowerCase():'';
     const rt=rec.r?rec.r.toLowerCase():'';
-    const rtc=rt.replace(/\s+/g,'').replace(/,/g,'.');
+    const rtc=rt.replace(/\s+/g,'').replace(/,/g,'.').replace(/-/g,'x');
     return{rec,i,ct,at,dt,rt,rtc};
   });
   allBrands=new Set();DATA.forEach(r=>Object.keys(r.b).forEach(b=>allBrands.add(b)));
@@ -584,7 +584,7 @@ function renderPills(){
 }
 
 function matchRecord(entry,q){
-  const qn=norm(q),ql=q.toLowerCase();const qlc=ql.replace(/\s+/g,'').replace(/,/g,'.');const mb=new Set();
+  const qn=norm(q),ql=q.toLowerCase();const qlc=ql.replace(/\s+/g,'').replace(/,/g,'.').replace(/-/g,'x');const mb=new Set();
   for(const tk of entry.ct)if(tk.n.includes(qn))mb.add(tk.brand);
   const ia=entry.at.some(a=>a.includes(ql));
   const id=entry.dt&&entry.dt.includes(ql);
@@ -698,9 +698,9 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 66 - busqueda rosca sin espacios y coma/punto activa');
+console.log('FilterEQ version 67 - busqueda rosca normaliza espacios, coma/punto y guion/x');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
-fetch('filterEQ_data.json?v=66').then(function(r){
+fetch('filterEQ_data.json?v=67').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }).then(function(data){
@@ -709,7 +709,7 @@ fetch('filterEQ_data.json?v=66').then(function(r){
   renderPills();renderPage();
   // Las imágenes se cargan aparte, en segundo plano, para que la búsqueda
   // esté disponible de inmediato sin esperar los ~23MB de fotos.
-  fetch('filterEQ_imgs.json?v=66').then(function(r){
+  fetch('filterEQ_imgs.json?v=67').then(function(r){
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }).then(function(imgs){
