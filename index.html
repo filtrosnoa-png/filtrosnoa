@@ -273,30 +273,40 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
 .modal-close:hover{background:rgba(240,192,48,.15);color:var(--accent)}
 .modal-badge{
   display:inline-flex;align-items:center;gap:6px;
-  background:linear-gradient(90deg,rgba(240,192,48,.2),rgba(240,120,0,.15));
-  border:1px solid rgba(240,192,48,.4);
-  border-radius:20px;padding:5px 14px;
+  background:rgba(240,192,48,.1);
+  border:1px solid rgba(240,192,48,.35);
+  border-radius:4px;padding:5px 14px;
   font-size:11px;font-weight:700;color:var(--accent);
-  letter-spacing:.8px;text-transform:uppercase;
-  margin-bottom:16px;
+  letter-spacing:1.5px;text-transform:uppercase;
+  margin-bottom:20px;
 }
-.modal-emoji{font-size:56px;display:block;margin-bottom:12px;animation:bounce 1.4s infinite}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.modal-title{
-  font-size:26px;font-weight:900;line-height:1.15;
-  background:linear-gradient(135deg,#ffd060,var(--accent),#ff9500);
+.modal-discount{
+  margin-bottom:14px;
+}
+.modal-discount-num{
+  font-size:32px;font-weight:900;line-height:1.15;
+  background:linear-gradient(135deg,#ffd060,var(--accent),#ff8c00);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:10px;
+  letter-spacing:.5px;
+}
+.modal-discount-label{
+  display:block;font-size:13px;color:#c8a060;
+  letter-spacing:.5px;margin-top:6px;
+}
+.modal-title{
+  font-size:22px;font-weight:800;line-height:1.25;
+  color:#f0e6d0;
+  margin-bottom:12px;
 }
 .modal-sub{
   font-size:14px;color:#c8a060;line-height:1.6;margin-bottom:20px;
 }
 .modal-sub strong{color:#ffd060}
 .modal-urgency{
-  background:rgba(240,80,30,.12);
-  border:1px solid rgba(240,80,30,.3);
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
   border-radius:8px;padding:8px 14px;
-  font-size:12px;color:#ff9060;font-weight:600;
+  font-size:12px;color:#a89060;font-weight:500;
   margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .modal-cta{
@@ -320,8 +330,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
 .modal-skip:hover{color:#c0a060}
 @media(max-width:480px){
   #oferta-modal{padding:28px 20px 22px}
-  .modal-title{font-size:21px}
-  .modal-emoji{font-size:44px}
+  .modal-title{font-size:19px}
+  .modal-discount-num{font-size:26px}
 }
 
 /* ── BUSQUEDA MAESTRA ── */
@@ -950,18 +960,21 @@ async function busquedaMaestra() {
 <div id="oferta-overlay" style="display:none">
   <div id="oferta-modal">
     <button class="modal-close" onclick="closeBanner()" title="Cerrar">✕</button>
-    <div class="modal-badge">🔒 Solo clientes Filtros NOA</div>
-    <span class="modal-emoji">🏷️</span>
-    <div class="modal-title">¡Ofertas especiales<br>de este mes!</div>
+    <div class="modal-badge">OFERTAS · JULIO 2026</div>
+    <div class="modal-discount">
+      <span class="modal-discount-num">DESCUENTOS<br>ESPECIALES</span>
+      <span class="modal-discount-label">durante el mes de julio</span>
+    </div>
+    <div class="modal-title">Precios especiales<br>en filtros seleccionados</div>
     <div class="modal-sub">
-      Tenemos <strong>descuentos exclusivos</strong> en filtros seleccionados de EMAFI, MAXFIL, PROFILTER y más.<br>
-      No te pierdas los precios de esta semana.
+      Descuentos vigentes en <strong>EMAFI, MAXFIL, PROFILTER</strong> y otras marcas líderes.<br>
+      Catálogo de ofertas actualizado este mes.
     </div>
     <div class="modal-urgency">
-      ⚡ Stock limitado — las ofertas cambian cada mes
+      Vigente solo durante julio · stock sujeto a disponibilidad
     </div>
     <a class="modal-cta" href="https://filtrosnoa-png.github.io/filtrosnoa/ofertas" target="_blank" rel="noopener" onclick="closeBanner()">
-      🛒 &nbsp; Ver todas las ofertas ahora
+      Ver ofertas de julio
     </a>
     <button class="modal-skip" onclick="closeBanner()">
       No gracias, quiero buscar equivalencias
