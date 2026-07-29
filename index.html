@@ -706,7 +706,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 71 - clave gemini configurada');
+console.log('FilterEQ version 72 - muestra error real de google');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -800,9 +800,9 @@ async function busquedaMaestra() {
       try { var ej = await resp.json(); errMsg = (ej.error && ej.error.message) || ''; } catch (e0) {}
       if (GEMINI_KEY === 'TU_API_KEY_DE_GEMINI' || !GEMINI_KEY) throw new Error('Falta cargar la clave de Gemini en el codigo (variable GEMINI_KEY).');
       if (resp.status === 429) throw new Error('Se alcanzo el limite diario de consultas gratuitas. Proba de nuevo mas tarde.');
-      if (resp.status === 401) throw new Error('Clave rechazada. Revisa que sea una API key de Gemini (empieza con "AIza") copiada completa, sin espacios.');
-      if (resp.status === 403) throw new Error('La clave no esta autorizada. Revisa las restricciones de dominio y que la Generative Language API este habilitada.');
-      if (resp.status === 400) throw new Error('Clave invalida o pedido mal formado. Revisa la API key.');
+      if (resp.status === 401) throw new Error('Clave rechazada. ' + (errMsg || 'Revisa que sea una API key de Gemini (empieza con "AIza") copiada completa.'));
+      if (resp.status === 403) throw new Error('Acceso denegado. ' + (errMsg || 'Revisa restricciones de dominio y que la Generative Language API este habilitada.'));
+      if (resp.status === 400) throw new Error('Pedido rechazado. ' + (errMsg || 'Revisa la API key.'));
       throw new Error('Error del servicio (' + resp.status + '). ' + errMsg);
     }
 
