@@ -706,7 +706,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 68 - busqueda maestra con Gemini + banner julio + FARO antes de WEGA');
+console.log('FilterEQ version 69 - modelo gemini-3.5-flash');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -763,7 +763,7 @@ async function busquedaMaestra() {
      La sacas gratis en https://aistudio.google.com/apikey
      ============================================================ */
   var GEMINI_KEY = 'AQ.Ab8RN6LhG2tms5RN2fDK-AGoageTqqle6YjaBfUEmXQwwTvLcQ';
-  var GEMINI_MODEL = 'gemini-2.5-flash';
+  var GEMINI_MODEL = 'gemini-3.5-flash';
 
   var codigo = maestraQuery;
   result.className = 'visible';
