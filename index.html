@@ -273,30 +273,38 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
 .modal-close:hover{background:rgba(240,192,48,.15);color:var(--accent)}
 .modal-badge{
   display:inline-flex;align-items:center;gap:6px;
-  background:linear-gradient(90deg,rgba(240,192,48,.2),rgba(240,120,0,.15));
-  border:1px solid rgba(240,192,48,.4);
-  border-radius:20px;padding:5px 14px;
+  background:rgba(240,192,48,.1);
+  border:1px solid rgba(240,192,48,.35);
+  border-radius:4px;padding:5px 14px;
   font-size:11px;font-weight:700;color:var(--accent);
-  letter-spacing:.8px;text-transform:uppercase;
-  margin-bottom:16px;
+  letter-spacing:1.5px;text-transform:uppercase;
+  margin-bottom:20px;
 }
-.modal-emoji{font-size:56px;display:block;margin-bottom:12px;animation:bounce 1.4s infinite}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.modal-title{
-  font-size:26px;font-weight:900;line-height:1.15;
-  background:linear-gradient(135deg,#ffd060,var(--accent),#ff9500);
+.modal-discount{margin-bottom:14px}
+.modal-discount-num{
+  font-size:32px;font-weight:900;line-height:1.15;
+  background:linear-gradient(135deg,#ffd060,var(--accent),#ff8c00);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:10px;
+  letter-spacing:.5px;
+}
+.modal-discount-label{
+  display:block;font-size:13px;color:#c8a060;
+  letter-spacing:.5px;margin-top:6px;
+}
+.modal-title{
+  font-size:22px;font-weight:800;line-height:1.25;
+  color:#f0e6d0;
+  margin-bottom:12px;
 }
 .modal-sub{
   font-size:14px;color:#c8a060;line-height:1.6;margin-bottom:20px;
 }
 .modal-sub strong{color:#ffd060}
 .modal-urgency{
-  background:rgba(240,80,30,.12);
-  border:1px solid rgba(240,80,30,.3);
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
   border-radius:8px;padding:8px 14px;
-  font-size:12px;color:#ff9060;font-weight:600;
+  font-size:12px;color:#a89060;font-weight:500;
   margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .modal-cta{
@@ -320,8 +328,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
 .modal-skip:hover{color:#c0a060}
 @media(max-width:480px){
   #oferta-modal{padding:28px 20px 22px}
-  .modal-title{font-size:21px}
-  .modal-emoji{font-size:44px}
+  .modal-title{font-size:19px}
+  .modal-discount-num{font-size:26px}
 }
 
 /* ── BUSQUEDA MAESTRA ── */
@@ -698,9 +706,9 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 67 - busqueda rosca normaliza espacios, coma/punto y guion/x');
+console.log('FilterEQ version 68 - busqueda maestra con Gemini + banner julio + FARO antes de WEGA');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
-fetch('filterEQ_data.json?v=67').then(function(r){
+fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }).then(function(data){
@@ -709,7 +717,7 @@ fetch('filterEQ_data.json?v=67').then(function(r){
   renderPills();renderPage();
   // Las imágenes se cargan aparte, en segundo plano, para que la búsqueda
   // esté disponible de inmediato sin esperar los ~23MB de fotos.
-  fetch('filterEQ_imgs.json?v=67').then(function(r){
+  fetch('filterEQ_imgs.json?v=68').then(function(r){
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }).then(function(imgs){
@@ -749,199 +757,106 @@ async function busquedaMaestra() {
     if (wrap) { var d=document.createElement('div'); d.id='maestra-result'; wrap.insertBefore(d, wrap.querySelector('.maestra-btn')); result=d; }
     else return;
   }
-  var searchTerm = 'filtro ' + maestraQuery;
-  result.className = 'visible';
-  result.innerHTML = '<div class="mr-loading"><div class="spinner"></div><span>Buscando: <em>' + esc(searchTerm) + '</em>...</span></div>';
 
-  var SERPER_KEY = 'bb501f3fab2ca7d23ddaacf6b0e914f4d8b210e6';
-  var FC_KEY = 'fc-0f26b68dae0b468a974b80cdb5ab1683';
-  var GROQ_KEY = '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';
-  var q = encodeURIComponent(maestraQuery);
+  /* ============================================================
+     PONE TU CLAVE DE GEMINI ACA (entre las comillas).
+     La sacas gratis en https://aistudio.google.com/apikey
+     ============================================================ */
+  var GEMINI_KEY = 'AIzaSyA62b8hztuLTguuOA9ZobuhN5OCk-eEU6o';
+  var GEMINI_MODEL = 'gemini-2.5-flash';
+
+  var codigo = maestraQuery;
+  result.className = 'visible';
+  result.innerHTML = '<div class="mr-loading"><div class="spinner"></div><span>Buscando <em>' + esc(codigo) + '</em> en la web...</span></div>';
+
+  var prompt =
+    'Sos un experto tecnico en filtros automotrices e industriales (aire, aceite, combustible, cabina, hidraulicos). '
+    + 'Busca en la web informacion tecnica del filtro con codigo "' + codigo + '". '
+    + 'Priorizar catalogos oficiales de fabricantes (WIX, MANN, Fram, Mahle, Donaldson, Fleetguard, Baldwin, Sakura, Hengst) y sitios de cross-reference confiables. '
+    + 'Responde en espanol con EXACTAMENTE esta estructura en markdown, sin texto extra antes ni despues:\n\n'
+    + '## TIPO\n(aire / aceite / combustible / cabina / hidraulico)\n\n'
+    + '## APLICACION\n(marcas y modelos de vehiculos o maquinas donde se usa)\n\n'
+    + '## EQUIVALENCIAS\n(lista de codigos equivalentes, indicando la marca de cada uno)\n\n'
+    + '## MEDIDAS\n(alto, diametro externo, diametro interno en mm; si es panel usar largo/ancho/alto)\n\n'
+    + '## ROSCA\n(solo para filtros de aceite/combustible roscados; si es de aire poner "No aplica")\n\n'
+    + 'Reglas estrictas: usa unicamente datos que encuentres en las fuentes, NO inventes. '
+    + 'Si algun dato no aparece, escribi "Sin datos". Se conciso y directo.';
 
   try {
-    // 1. Dos busquedas Serper simultaneas (ES + EN)
-    var [sr1, sr2, sr3] = await Promise.all([
-      fetch('https://google.serper.dev/search', {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'application/json','X-API-KEY':SERPER_KEY},
-        body: JSON.stringify({q: searchTerm + ' equivalencias medidas rosca aplicacion', hl:'es', gl:'ar', num:8})
-      }),
-      fetch('https://google.serper.dev/search', {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'application/json','X-API-KEY':SERPER_KEY},
-        body: JSON.stringify({q: maestraQuery + ' filter cross reference specifications dimensions thread', hl:'en', num:8})
-      }),
-      fetch('https://google.serper.dev/search', {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'application/json','X-API-KEY':SERPER_KEY},
-        body: JSON.stringify({q: 'site:shop.donaldson.com ' + maestraQuery, hl:'en', num:3})
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_KEY;
+    var resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: { temperature: 0.1 }
       })
-    ]);
-    var sd1 = sr1.ok ? await sr1.json() : {};
-    var sd2 = sr2.ok ? await sr2.json() : {};
-    var sd3 = sr3.ok ? await sr3.json() : {};
-    // Prioritize Donaldson results
-    var donaldsonOrg = sd3.organic||[];
-    var allOrganic = donaldsonOrg.concat((sd1.organic||[])).concat(sd2.organic||[]);
-
-    // URLs priorizando sitios especializados
-    var specialUrls = [
-      'https://www.filterslist.com/en/search/?query=' + q,
-      'https://crossreference.fram.com/filter/' + maestraQuery,
-      'https://www.filterxref.com/filter/donaldson/' + maestraQuery,
-      'https://www.filterscross.com/search?q=' + q,
-      'https://www.mahle-aftermarket.com/search/?q=' + q,
-      'https://www.mann-filter.com/en/catalog.html?search=' + q,
-      'https://www.fram.com/filters/search?q=' + q
-    ];
-    var organicUrls = allOrganic.slice(0,8).map(function(r){return r.link;}).filter(Boolean);
-    var allUrls = specialUrls.concat(organicUrls).filter(function(u,i,a){return a.indexOf(u)===i;});
-
-    result.innerHTML = '<div class="mr-loading"><div class="spinner"></div><span>Leyendo paginas especializadas...</span></div>';
-
-    // 2. Firecrawl: 4 paginas en paralelo
-    var scrapeTargets = allUrls.slice(0,4);
-    var scrapeResults = await Promise.all(scrapeTargets.map(function(url){
-      return fetch('https://api.firecrawl.dev/v1/scrape', {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+FC_KEY},
-        body: JSON.stringify({url:url, formats:['markdown'], onlyMainContent:true, waitFor:1000})
-      }).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
-    }));
-
-    var scrapedContent = '';
-    var scrapedSources = [];
-    scrapeResults.forEach(function(res,i){
-      if (res&&res.data&&res.data.markdown&&res.data.markdown.length>100){
-        scrapedContent += '[PAGINA '+(i+1)+'] '+scrapeTargets[i]+'\n'+res.data.markdown.substring(0,1500)+'\n\n';
-        scrapedSources.push(scrapeTargets[i]);
-      }
     });
 
-    // Snippets de Serper
-    var snippets = '';
-    if(sd1.answerBox) snippets += 'RESPUESTA: '+(sd1.answerBox.answer||sd1.answerBox.snippet||'')+'\n\n';
-    if(sd1.knowledgeGraph){
-      var kg=sd1.knowledgeGraph;
-      snippets += (kg.title||'')+': '+(kg.description||'')+'\n';
-      if(kg.attributes) Object.entries(kg.attributes).forEach(function(e){snippets+=e[0]+': '+e[1]+'\n';});
-      snippets += '\n';
-    }
-    allOrganic.slice(0,6).forEach(function(r){ snippets += '['+r.title+'] '+(r.snippet||'')+'\n'; });
-
-    var fullContext = (scrapedContent||'') + '\n--- SNIPPETS ---\n' + snippets;
-    if (!fullContext.trim()) throw new Error('No se encontro informacion para este codigo.');
-
-    // 3. Imagen real con Serper Images
-    var imgUrl = null;
-    try {
-      var imgR = await fetch('https://google.serper.dev/images',{
-        method:'POST',mode:'cors',
-        headers:{'Content-Type':'application/json','X-API-KEY':SERPER_KEY},
-        body:JSON.stringify({q:maestraQuery+' filtro filter',num:5})
-      });
-      if(imgR.ok){
-        var imgD=await imgR.json();
-        if(imgD.images) for(var ii=0;ii<imgD.images.length;ii++){
-          var c=imgD.images[ii];
-          if(c.imageUrl&&(c.imageWidth||0)>80){imgUrl=c.imageUrl;break;}
-        }
-      }
-    }catch(e2){}
-    if(!imgUrl){
-      var ft=getFilterType({b:{'EMAFI':maestraQuery}});
-      var fb={'air':'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=150&fit=crop',
-              'oil':'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=200&h=150&fit=crop',
-              'fuel':'https://images.unsplash.com/photo-1611418524549-0d43f8a44e5e?w=200&h=150&fit=crop',
-              'cabin':'https://images.unsplash.com/photo-1558618047-3ac4a09c0e4b?w=200&h=150&fit=crop',
-              'other':'https://images.unsplash.com/photo-1567416661576-659f9ab2ef28?w=200&h=150&fit=crop'};
-      imgUrl=fb[ft]||fb['other'];
+    if (!resp.ok) {
+      var errMsg = '';
+      try { var ej = await resp.json(); errMsg = (ej.error && ej.error.message) || ''; } catch (e0) {}
+      if (GEMINI_KEY === 'TU_API_KEY_DE_GEMINI') throw new Error('Falta cargar la clave de Gemini en el codigo (variable GEMINI_KEY).');
+      if (resp.status === 429) throw new Error('Se alcanzo el limite diario de consultas gratuitas. Proba de nuevo mas tarde.');
+      if (resp.status === 403) throw new Error('La clave no es valida o no esta autorizada para este dominio.');
+      if (resp.status === 400) throw new Error('Clave invalida o pedido mal formado. Revisa la API key.');
+      throw new Error('Error del servicio (' + resp.status + '). ' + errMsg);
     }
 
-    // 4. Analizar con Groq llama-3.3-70b (mejor calidad)
-    result.innerHTML = '<div class="mr-loading"><div class="spinner"></div><span>Analizando informacion tecnica...</span></div>';
-
-    var groqBody = JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {role:'system', content:'Sos un experto tecnico en filtros automotrices e industriales. Extraes datos tecnicos concretos de textos web. Solo usas informacion provista. Das respuestas completas y estructuradas en espanol.'},
-        {role:'user', content:
-          'Analiza esta informacion web sobre ' + searchTerm + ':\n\n'
-          + fullContext.substring(0,4000)
-          + '\n\nExtrae y presenta con esta estructura:\n'
-          + '## TIPO\n## APLICACION\n(todos los vehiculos compatibles)\n'
-          + '## EQUIVALENCIAS\n(todos los codigos por marca)\n'
-          + '## MEDIDAS\n(alto, diam ext, diam int en mm)\n'
-          + '## ROSCA\n(si aplica)\n'
-          + '## DATOS TECNICOS\n'
-          + 'Lista TODO lo que encuentres. Si un dato no esta disponible indicalo.'
-        }
-      ],
-      max_tokens: 1200,
-      temperature: 0.1
-    });
-
-    var groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',mode:'cors',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-      body: groqBody
-    });
-
-    // Reintento si 429
-    if(groqResp.status===429){
-      result.innerHTML='<div class="mr-loading"><div class="spinner"></div><span>Reintentando en 8 segundos...</span></div>';
-      await new Promise(function(r){setTimeout(r,8000);});
-      groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',mode:'cors',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-        body: JSON.stringify({
-          model:'llama-3.3-70b-versatile',
-          messages:[{role:'user',content:'Informacion tecnica del '+searchTerm+':\n'+fullContext.substring(0,2000)+'\nExtrae: tipo, aplicacion, equivalencias, medidas, rosca.'}],
-          max_tokens:800, temperature:0.1
-        })
-      });
+    var data = await resp.json();
+    var cand = data.candidates && data.candidates[0];
+    var text = '';
+    if (cand && cand.content && cand.content.parts) {
+      text = cand.content.parts.map(function (p) { return p.text || ''; }).join('');
     }
-    if(!groqResp.ok) throw new Error('IA error '+groqResp.status);
-    var groqData=await groqResp.json();
-    var text=groqData.choices&&groqData.choices[0]&&groqData.choices[0].message?groqData.choices[0].message.content:'Sin respuesta.';
+    if (!text.trim()) throw new Error('No se encontro informacion para "' + codigo + '".');
 
     var formatted = text
-      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g,'<em>$1</em>')
-      .replace(/^## (.+)$/gm,'<div class="mr-section-title">$1</div>')
-      .replace(/^[-*] (.+)$/gm,'<div class="mr-item"><span class="mr-bullet">&#9658;</span> $1</div>')
-      .replace(/^\d+[.)] (.+)$/gm,'<div class="mr-item"><span class="mr-bullet">&#9658;</span> $1</div>');
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^#{1,3}\s*(.+)$/gm, '<div class="mr-section-title">$1</div>')
+      .replace(/^[-*]\s+(.+)$/gm, '<div class="mr-item"><span class="mr-bullet">&#9658;</span> $1</div>')
+      .replace(/^\d+[.)]\s+(.+)$/gm, '<div class="mr-item"><span class="mr-bullet">&#9658;</span> $1</div>');
     formatted = formatted.split('\n\n').join('<br>').split('\n').join('<br>');
 
-    var srcHtml='';
-    var dispSrcs = scrapedSources.length ? scrapedSources : allOrganic.slice(0,4).map(function(r){return r.link;});
-    if(dispSrcs.length){
-      srcHtml='<div style="padding:8px 14px 6px;font-size:10px;color:#5c6bc0;border-top:1px solid #1a237e;display:flex;flex-wrap:wrap;gap:4px">'
-        +'<span style="color:#4a5a8a;margin-right:4px">&#128269; Fuentes:</span>'
-        +dispSrcs.slice(0,5).map(function(url){
-          var d=url.replace(/https?:\/\/(www\.)?/,'').split('/')[0];
-          return '<a href="'+url+'" target="_blank" style="color:#7986cb">'+esc(d)+'</a>';
-        }).join(' &middot; ')
-        +'</div>';
+    var srcHtml = '';
+    var gm = cand && cand.groundingMetadata;
+    var chunks = gm && gm.groundingChunks;
+    if (chunks && chunks.length) {
+      var seen = {}, links = [];
+      chunks.forEach(function (c) {
+        var uri = c.web && c.web.uri;
+        var title = (c.web && (c.web.title || c.web.domain)) || '';
+        var keyd = title || uri;
+        if (uri && !seen[keyd]) { seen[keyd] = 1; links.push({ uri: uri, title: title }); }
+      });
+      if (links.length) {
+        srcHtml = '<div style="padding:8px 14px 6px;font-size:10px;color:#5c6bc0;border-top:1px solid #1a237e;display:flex;flex-wrap:wrap;gap:4px">'
+          + '<span style="color:#4a5a8a;margin-right:4px">&#128269; Fuentes:</span>'
+          + links.slice(0, 6).map(function (l) {
+              var dom = esc(l.title || l.uri.replace(/https?:\/\/(www\.)?/, '').split('/')[0]);
+              return '<a href="' + esc(l.uri) + '" target="_blank" rel="noopener" style="color:#7986cb">' + dom + '</a>';
+            }).join(' &middot; ')
+          + '</div>';
+      }
     }
 
     result.innerHTML =
       '<div class="mr-header"><span class="mr-logo">&#10024;</span>'
-      +'<span class="mr-title">Busqueda Maestra &mdash; '+esc(searchTerm)+'</span></div>'
-      +'<div style="display:flex;gap:14px;padding:14px 14px 8px;align-items:flex-start">'
-      +'<img src="'+imgUrl+'" alt="filtro" style="width:120px;min-width:120px;height:100px;object-fit:cover;border-radius:10px;border:1px solid #2e3850" onerror="this.style.display=\'none\'">'
-      +'<div class="mr-body" style="padding:0;flex:1">'+formatted+'</div>'
-      +'</div>'+srcHtml
-      +'<div class="mr-disclaimer">&#9888;&#65039; Basado en '+scrapedSources.length+' paginas + busqueda web &mdash; verificar antes de usar como referencia tecnica.</div>';
+      + '<span class="mr-title">B&uacute;squeda Maestra &mdash; ' + esc(codigo) + '</span></div>'
+      + '<div class="mr-body">' + formatted + '</div>'
+      + srcHtml
+      + '<div class="mr-disclaimer">&#9888;&#65039; Resultado generado por IA con b&uacute;squeda web &mdash; verificar antes de usarlo como referencia t&eacute;cnica.</div>';
 
-  } catch(e){
-    var msg=e.message||'';
-    var isCors=msg.toLowerCase().indexOf('networkerror')!==-1||msg.toLowerCase().indexOf('fetch')!==-1;
-    result.innerHTML=
-      '<div class="mr-header"><span class="mr-logo">&#10024;</span><span class="mr-title">Busqueda Maestra</span></div>'
-      +'<div class="mr-body" style="text-align:center;padding:20px;color:#9fa8da">'
-      +(isCors?'<p>Subi el archivo a GitHub Pages para usar esta funcion.</p>':'<p>'+esc(msg)+'</p>')
-      +'</div>';
+  } catch (e) {
+    var msg = e.message || 'Error desconocido';
+    var isNet = msg.toLowerCase().indexOf('failed to fetch') !== -1 || msg.toLowerCase().indexOf('networkerror') !== -1;
+    result.innerHTML =
+      '<div class="mr-header"><span class="mr-logo">&#10024;</span><span class="mr-title">B&uacute;squeda Maestra</span></div>'
+      + '<div class="mr-body" style="text-align:center;padding:20px;color:#9fa8da">'
+      + (isNet ? '<p>No se pudo conectar. Si estas probando el archivo en tu compu, subilo a GitHub Pages para que funcione.</p>' : '<p>' + esc(msg) + '</p>')
+      + '</div>';
   }
 }
 
@@ -950,18 +865,21 @@ async function busquedaMaestra() {
 <div id="oferta-overlay" style="display:none">
   <div id="oferta-modal">
     <button class="modal-close" onclick="closeBanner()" title="Cerrar">✕</button>
-    <div class="modal-badge">🔒 Solo clientes Filtros NOA</div>
-    <span class="modal-emoji">🏷️</span>
-    <div class="modal-title">¡Ofertas especiales<br>de este mes!</div>
+    <div class="modal-badge">OFERTAS · JULIO 2026</div>
+    <div class="modal-discount">
+      <span class="modal-discount-num">DESCUENTOS<br>ESPECIALES</span>
+      <span class="modal-discount-label">durante el mes de julio</span>
+    </div>
+    <div class="modal-title">Precios especiales<br>en filtros seleccionados</div>
     <div class="modal-sub">
-      Tenemos <strong>descuentos exclusivos</strong> en filtros seleccionados de EMAFI, MAXFIL, PROFILTER y más.<br>
-      No te pierdas los precios de esta semana.
+      Descuentos vigentes en <strong>EMAFI, MAXFIL, PROFILTER</strong> y otras marcas líderes.<br>
+      Catálogo de ofertas actualizado este mes.
     </div>
     <div class="modal-urgency">
-      ⚡ Stock limitado — las ofertas cambian cada mes
+      Vigente solo durante julio · stock sujeto a disponibilidad
     </div>
     <a class="modal-cta" href="https://filtrosnoa-png.github.io/filtrosnoa/ofertas" target="_blank" rel="noopener" onclick="closeBanner()">
-      🛒 &nbsp; Ver todas las ofertas ahora
+      Ver ofertas de julio
     </a>
     <button class="modal-skip" onclick="closeBanner()">
       No gracias, quiero buscar equivalencias
