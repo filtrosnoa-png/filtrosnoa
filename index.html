@@ -711,7 +711,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 82 - reintento con busqueda basica ante 413');
+console.log('FilterEQ version 83 - fallback 413 acota a sitios de filtros + aviso si todo Sin datos');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -794,28 +794,36 @@ async function busquedaMaestra() {
     + 'Reglas estrictas: usa unicamente datos que encuentres en las fuentes, NO inventes. '
     + 'Si algun dato no aparece tras buscar, escribi "Sin datos". Se conciso y directo.';
 
-  function callGroq(useBasic) {
+  function callGroq(restrictDomains) {
     var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY };
-    if (useBasic) headers['Groq-Model-Version'] = '2025-07-23'; // busqueda basica: trae menos contenido, evita el 413
+    var body = {
+      model: GROQ_MODEL,
+      messages: [
+        { role: 'system', content: 'Sos un experto tecnico en filtros automotrices e industriales (aire, aceite, combustible, cabina, hidraulicos). Extraes datos tecnicos concretos de fuentes web y das respuestas estructuradas en espanol.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.1,
+      max_completion_tokens: 900
+    };
+    // Fallback ante 413: acotar la busqueda a sitios de filtros -> menos contenido, sin perder calidad
+    if (restrictDomains) {
+      body.search_settings = { include_domains: [
+        'wixfilters.com','mann-filter.com','fram.com','baldwinfilters.com',
+        'donaldson.com','fleetguard.com','sakura-filter.com','hengst.com',
+        'mahle-aftermarket.com','shop.deere.com','parts.cat.com'
+      ] };
+    }
     return fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       mode: 'cors',
       headers: headers,
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          { role: 'system', content: 'Sos un experto tecnico en filtros automotrices e industriales (aire, aceite, combustible, cabina, hidraulicos). Extraes datos tecnicos concretos de fuentes web y das respuestas estructuradas en espanol.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.1,
-        max_completion_tokens: 900
-      })
+      body: JSON.stringify(body)
     });
   }
 
   try {
     var resp = await callGroq(false);
-    // Si trae demasiado contenido (413), reintentar con busqueda basica (menos contenido)
+    // Si trae demasiado contenido (413), reintentar acotando a sitios de filtros
     if (resp.status === 413) {
       resp = await callGroq(true);
     }
@@ -834,6 +842,9 @@ async function busquedaMaestra() {
     var msg = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message : null;
     var text = msg ? (msg.content || '') : '';
     if (!text.trim()) throw new Error('No se encontro informacion para "' + codigo + '".');
+    // Si casi todo vino "Sin datos", avisar en vez de mostrar un card vacio
+    var sinDatosCount = (text.match(/sin datos/gi) || []).length;
+    if (sinDatosCount >= 3) throw new Error('No se encontraron datos en la web para "' + codigo + '". Proba escribiendo el codigo completo, con la marca, o verifica que sea correcto.');
 
     var formatted = text
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
