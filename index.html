@@ -711,7 +711,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 81 - registro M3397/1 aceite + getFilterType detecta tipo por detalle');
+console.log('FilterEQ version 82 - reintento con busqueda basica ante 413');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -794,11 +794,13 @@ async function busquedaMaestra() {
     + 'Reglas estrictas: usa unicamente datos que encuentres en las fuentes, NO inventes. '
     + 'Si algun dato no aparece tras buscar, escribi "Sin datos". Se conciso y directo.';
 
-  try {
-    var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  function callGroq(useBasic) {
+    var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY };
+    if (useBasic) headers['Groq-Model-Version'] = '2025-07-23'; // busqueda basica: trae menos contenido, evita el 413
+    return fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY },
+      headers: headers,
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [
@@ -809,13 +811,21 @@ async function busquedaMaestra() {
         max_completion_tokens: 900
       })
     });
+  }
+
+  try {
+    var resp = await callGroq(false);
+    // Si trae demasiado contenido (413), reintentar con busqueda basica (menos contenido)
+    if (resp.status === 413) {
+      resp = await callGroq(true);
+    }
 
     if (!resp.ok) {
       var errMsg = '';
       try { var ej = await resp.json(); errMsg = (ej.error && ej.error.message) || ''; } catch (e0) {}
       if (GROQ_KEY === 'TU_API_KEY_DE_GROQ' || !GROQ_KEY) throw new Error('Falta cargar la clave de Groq en el codigo (variable GROQ_KEY).');
       if (resp.status === 401) throw new Error('Clave rechazada. ' + (errMsg || 'Revisa que sea una API key de Groq (empieza con "gsk_") copiada completa.'));
-      if (resp.status === 413) throw new Error('La busqueda trajo demasiado contenido. Proba con un codigo mas especifico.');
+      if (resp.status === 413) throw new Error('El codigo trajo demasiado contenido de la web. Proba escribiendolo mas completo o con la marca.');
       if (resp.status === 429) throw new Error('Limite temporal alcanzado (la cuenta gratuita permite pocas busquedas por minuto). Espera ~1 minuto y proba de nuevo.');
       throw new Error('Error del servicio (' + resp.status + '). ' + errMsg);
     }
