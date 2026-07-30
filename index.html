@@ -455,6 +455,11 @@ function getFilterType(rec){
   if(/EAM[ ]?\d|AF-|EAH[ ]?\d|EFPA/.test(all)) return 'air';
   if(/EFC[ ]?\d|FF-|EC\d|UC\d/.test(all)) return 'fuel';
   if(/ELM[ ]?\d|OF-|UL\d|EL\d|ULF/.test(all)) return 'oil';
+  var extra=((rec.d||'')+' '+((rec.m&&rec.m.t)||'')).toLowerCase();
+  if(/\baceite\b|\boil\b/.test(extra)) return 'oil';
+  if(/\bcombustible\b|\bgasoil\b|\bdiesel\b|\bnafta\b/.test(extra)) return 'fuel';
+  if(/\bcabina\b|\bhabitaculo\b|\bcabin\b/.test(extra)) return 'cabin';
+  if(/\baire\b|\bair\b/.test(extra)) return 'air';
   return 'other';
 }
 var FTYPE={
@@ -706,7 +711,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 80 - agregada marca OCUATRO (ES240 en EFPA824, AP240 en EFPA825)');
+console.log('FilterEQ version 81 - registro M3397/1 aceite + getFilterType detecta tipo por detalle');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
