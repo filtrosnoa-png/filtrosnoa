@@ -706,7 +706,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 73 - clave AQ auth key');
+console.log('FilterEQ version 75 - clave groq configurada');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -759,20 +759,20 @@ async function busquedaMaestra() {
   }
 
   /* ============================================================
-     PONE TU CLAVE DE GEMINI ACA (entre las comillas).
-     La sacas gratis en https://aistudio.google.com/apikey
+     PONE TU CLAVE DE GROQ ACA (entre las comillas).
+     La sacas gratis en https://console.groq.com/keys
+     (empieza con "gsk_")
      ============================================================ */
-  var GEMINI_KEY = 'AQ.Ab8RN6LhG2tms5RN2fDK-AGoageTqqle6YjaBfUEmXQwwTvLcQ';
-  var GEMINI_MODEL = 'gemini-3.5-flash';
-  GEMINI_KEY = (GEMINI_KEY || '').trim();
+  var GROQ_KEY = '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';
+  var GROQ_MODEL = 'groq/compound';
+  GROQ_KEY = (GROQ_KEY || '').trim();
 
   var codigo = maestraQuery;
   result.className = 'visible';
   result.innerHTML = '<div class="mr-loading"><div class="spinner"></div><span>Buscando <em>' + esc(codigo) + '</em> en la web...</span></div>';
 
   var prompt =
-    'Sos un experto tecnico en filtros automotrices e industriales (aire, aceite, combustible, cabina, hidraulicos). '
-    + 'Busca en la web informacion tecnica del filtro con codigo "' + codigo + '". '
+    'Busca en la web informacion tecnica del filtro automotriz o industrial con codigo "' + codigo + '". '
     + 'Priorizar catalogos oficiales de fabricantes (WIX, MANN, Fram, Mahle, Donaldson, Fleetguard, Baldwin, Sakura, Hengst) y sitios de cross-reference confiables. '
     + 'Responde en espanol con EXACTAMENTE esta estructura en markdown, sin texto extra antes ni despues:\n\n'
     + '## TIPO\n(aire / aceite / combustible / cabina / hidraulico)\n\n'
@@ -784,34 +784,32 @@ async function busquedaMaestra() {
     + 'Si algun dato no aparece, escribi "Sin datos". Se conciso y directo.';
 
   try {
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
-    var resp = await fetch(url, {
+    var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        generationConfig: { temperature: 0.1 }
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: 'Sos un experto tecnico en filtros automotrices e industriales (aire, aceite, combustible, cabina, hidraulicos). Extraes datos tecnicos concretos de fuentes web y das respuestas estructuradas en espanol.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1
       })
     });
 
     if (!resp.ok) {
       var errMsg = '';
       try { var ej = await resp.json(); errMsg = (ej.error && ej.error.message) || ''; } catch (e0) {}
-      if (GEMINI_KEY === 'TU_API_KEY_DE_GEMINI' || !GEMINI_KEY) throw new Error('Falta cargar la clave de Gemini en el codigo (variable GEMINI_KEY).');
-      if (resp.status === 429) throw new Error('Se alcanzo el limite diario de consultas gratuitas. Proba de nuevo mas tarde.');
-      if (resp.status === 401) throw new Error('Clave rechazada. ' + (errMsg || 'Revisa que sea una API key de Gemini (empieza con "AIza") copiada completa.'));
-      if (resp.status === 403) throw new Error('Acceso denegado. ' + (errMsg || 'Revisa restricciones de dominio y que la Generative Language API este habilitada.'));
-      if (resp.status === 400) throw new Error('Pedido rechazado. ' + (errMsg || 'Revisa la API key.'));
+      if (GROQ_KEY === 'TU_API_KEY_DE_GROQ' || !GROQ_KEY) throw new Error('Falta cargar la clave de Groq en el codigo (variable GROQ_KEY).');
+      if (resp.status === 401) throw new Error('Clave rechazada. ' + (errMsg || 'Revisa que sea una API key de Groq (empieza con "gsk_") copiada completa.'));
+      if (resp.status === 429) throw new Error('Se alcanzo el limite de consultas por ahora. Proba de nuevo en unos minutos.');
       throw new Error('Error del servicio (' + resp.status + '). ' + errMsg);
     }
 
     var data = await resp.json();
-    var cand = data.candidates && data.candidates[0];
-    var text = '';
-    if (cand && cand.content && cand.content.parts) {
-      text = cand.content.parts.map(function (p) { return p.text || ''; }).join('');
-    }
+    var msg = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message : null;
+    var text = msg ? (msg.content || '') : '';
     if (!text.trim()) throw new Error('No se encontro informacion para "' + codigo + '".');
 
     var formatted = text
@@ -822,27 +820,24 @@ async function busquedaMaestra() {
       .replace(/^\d+[.)]\s+(.+)$/gm, '<div class="mr-item"><span class="mr-bullet">&#9658;</span> $1</div>');
     formatted = formatted.split('\n\n').join('<br>').split('\n').join('<br>');
 
+    // Fuentes: extraer URLs de las herramientas ejecutadas (busqueda web de compound)
     var srcHtml = '';
-    var gm = cand && cand.groundingMetadata;
-    var chunks = gm && gm.groundingChunks;
-    if (chunks && chunks.length) {
-      var seen = {}, links = [];
-      chunks.forEach(function (c) {
-        var uri = c.web && c.web.uri;
-        var title = (c.web && (c.web.title || c.web.domain)) || '';
-        var keyd = title || uri;
-        if (uri && !seen[keyd]) { seen[keyd] = 1; links.push({ uri: uri, title: title }); }
-      });
-      if (links.length) {
+    try {
+      var toolsBlob = JSON.stringify(msg.executed_tools || data.choices[0].message || {});
+      var urls = (toolsBlob.match(/https?:\/\/[^"\\\s]+/g) || [])
+        .map(function (u) { return u.replace(/[),.]+$/, ''); })
+        .filter(function (u) { return u.indexOf('groq.com') === -1 && u.indexOf('tavily') === -1; });
+      var seen = {}, uniq = [];
+      urls.forEach(function (u) { var dom = u.replace(/https?:\/\/(www\.)?/, '').split('/')[0]; if (!seen[dom]) { seen[dom] = 1; uniq.push({ u: u, d: dom }); } });
+      if (uniq.length) {
         srcHtml = '<div style="padding:8px 14px 6px;font-size:10px;color:#5c6bc0;border-top:1px solid #1a237e;display:flex;flex-wrap:wrap;gap:4px">'
           + '<span style="color:#4a5a8a;margin-right:4px">&#128269; Fuentes:</span>'
-          + links.slice(0, 6).map(function (l) {
-              var dom = esc(l.title || l.uri.replace(/https?:\/\/(www\.)?/, '').split('/')[0]);
-              return '<a href="' + esc(l.uri) + '" target="_blank" rel="noopener" style="color:#7986cb">' + dom + '</a>';
+          + uniq.slice(0, 6).map(function (o) {
+              return '<a href="' + esc(o.u) + '" target="_blank" rel="noopener" style="color:#7986cb">' + esc(o.d) + '</a>';
             }).join(' &middot; ')
           + '</div>';
       }
-    }
+    } catch (e1) {}
 
     result.innerHTML =
       '<div class="mr-header"><span class="mr-logo">&#10024;</span>'
@@ -852,12 +847,12 @@ async function busquedaMaestra() {
       + '<div class="mr-disclaimer">&#9888;&#65039; Resultado generado por IA con b&uacute;squeda web &mdash; verificar antes de usarlo como referencia t&eacute;cnica.</div>';
 
   } catch (e) {
-    var msg = e.message || 'Error desconocido';
-    var isNet = msg.toLowerCase().indexOf('failed to fetch') !== -1 || msg.toLowerCase().indexOf('networkerror') !== -1;
+    var m = e.message || 'Error desconocido';
+    var isNet = m.toLowerCase().indexOf('failed to fetch') !== -1 || m.toLowerCase().indexOf('networkerror') !== -1;
     result.innerHTML =
       '<div class="mr-header"><span class="mr-logo">&#10024;</span><span class="mr-title">B&uacute;squeda Maestra</span></div>'
       + '<div class="mr-body" style="text-align:center;padding:20px;color:#9fa8da">'
-      + (isNet ? '<p>No se pudo conectar. Si estas probando el archivo en tu compu, subilo a GitHub Pages para que funcione.</p>' : '<p>' + esc(msg) + '</p>')
+      + (isNet ? '<p>No se pudo conectar. Si estas probando el archivo en tu compu, subilo a GitHub Pages para que funcione.</p>' : '<p>' + esc(m) + '</p>')
       + '</div>';
   }
 }
