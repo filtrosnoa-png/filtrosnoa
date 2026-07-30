@@ -454,7 +454,7 @@ function getFilterType(rec){
   if(/MAH[ ]?\d|MHC[ ]?\d|CF-/.test(all)) return 'cabin';
   if(/EAM[ ]?\d|AF-|EAH[ ]?\d|EFPA/.test(all)) return 'air';
   if(/EFC[ ]?\d|FF-|EC\d|UC\d/.test(all)) return 'fuel';
-  if(/ELM[ ]?\d|OF-|UL\d|EL\d|ULF/.test(all)) return 'oil';
+  if(/ELM[ ]?\d|OF-|UL\d|EL\d|ULF|EUS[ ]?\d/.test(all)) return 'oil';
   var extra=((rec.d||'')+' '+((rec.m&&rec.m.t)||'')).toLowerCase();
   if(/\baceite\b|\boil\b/.test(extra)) return 'oil';
   if(/\bcombustible\b|\bgasoil\b|\bdiesel\b|\bnafta\b/.test(extra)) return 'fuel';
@@ -711,7 +711,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 83 - fallback 413 acota a sitios de filtros + aviso si todo Sin datos');
+console.log('FilterEQ version 84 - EUS detectado como aceite, WIX principal en EUS');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
