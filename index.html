@@ -442,8 +442,8 @@ let DATA=[];
 
 let IMGS={};
 
-const BORDER=['EMAFI','MAXFIL','PROFILTER','WIX','MANN','FARO','WEGA','FRAM','MARENO','MASTERFILT','HASTING','LANSS','TECNECO','SAKURA','MAHLE','TECFIL','PRIX','PUROLATOR','BALDWIN','FAMEL','FLEETGUARD','OEM','OTRAS','OTROS'];
-const BC={EMAFI:'#f0a500',MAXFIL:'#3a7ffc',PROFILTER:'#1ec98a',WIX:'#e0534a',MANN:'#c084fc',WEGA:'#38bdf8',FRAM:'#fb923c',MARENO:'#a3e635',MASTERFILT:'#f472b6',HASTING:'#e2b714',LANSS:'#a78bfa',TECNECO:'#34d399',FARO:'#fbbf24',SAKURA:'#f9a8d4',MAHLE:'#93c5fd',TECFIL:'#f87171',PRIX:'#6ee7b7',PUROLATOR:'#d946ef',BALDWIN:'#fb7185',FAMEL:'#a78bfa',FLEETGUARD:'#67e8f9',OEM:'#94a3b8',OTRAS:'#cbd5e1',OTROS:'#cbd5e1'};
+const BORDER=['EMAFI','MAXFIL','PROFILTER','WIX','MANN','FARO','WEGA','FRAM','MARENO','MASTERFILT','HASTING','LANSS','TECNECO','SAKURA','MAHLE','TECFIL','PRIX','PUROLATOR','BALDWIN','FAMEL','FLEETGUARD','OCUATRO','OEM','OTRAS','OTROS'];
+const BC={EMAFI:'#f0a500',MAXFIL:'#3a7ffc',PROFILTER:'#1ec98a',WIX:'#e0534a',MANN:'#c084fc',WEGA:'#38bdf8',FRAM:'#fb923c',MARENO:'#a3e635',MASTERFILT:'#f472b6',HASTING:'#e2b714',LANSS:'#a78bfa',TECNECO:'#34d399',FARO:'#fbbf24',SAKURA:'#f9a8d4',MAHLE:'#93c5fd',TECFIL:'#f87171',PRIX:'#6ee7b7',PUROLATOR:'#d946ef',BALDWIN:'#fb7185',FAMEL:'#a78bfa',FLEETGUARD:'#67e8f9',OCUATRO:'#2dd4bf',OEM:'#94a3b8',OTRAS:'#cbd5e1',OTROS:'#cbd5e1'};
 const IMG_BRANDS=['EMAFI','PROFILTER','MAXFIL','WIX','FARO','WEGA'];
 const PAGE_SIZE=30;
 let currentPage=1,filteredData=[],activeBrands=new Set(),openCard=null,lastQuery='';
@@ -706,7 +706,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 78 - prompt prioriza datos segun tipo de filtro');
+console.log('FilterEQ version 80 - agregada marca OCUATRO (ES240 en EFPA824, AP240 en EFPA825)');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -811,7 +811,7 @@ async function busquedaMaestra() {
       if (GROQ_KEY === 'TU_API_KEY_DE_GROQ' || !GROQ_KEY) throw new Error('Falta cargar la clave de Groq en el codigo (variable GROQ_KEY).');
       if (resp.status === 401) throw new Error('Clave rechazada. ' + (errMsg || 'Revisa que sea una API key de Groq (empieza con "gsk_") copiada completa.'));
       if (resp.status === 413) throw new Error('La busqueda trajo demasiado contenido. Proba con un codigo mas especifico.');
-      if (resp.status === 429) throw new Error('Se alcanzo el limite de consultas por ahora. Proba de nuevo en unos minutos.');
+      if (resp.status === 429) throw new Error('Limite temporal alcanzado (la cuenta gratuita permite pocas busquedas por minuto). Espera ~1 minuto y proba de nuevo.');
       throw new Error('Error del servicio (' + resp.status + '). ' + errMsg);
     }
 
