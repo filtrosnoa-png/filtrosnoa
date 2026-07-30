@@ -706,7 +706,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 75 - clave groq configurada');
+console.log('FilterEQ version 76 - compound-mini + limite de tokens');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -764,7 +764,7 @@ async function busquedaMaestra() {
      (empieza con "gsk_")
      ============================================================ */
   var GROQ_KEY = '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';
-  var GROQ_MODEL = 'groq/compound';
+  var GROQ_MODEL = 'groq/compound-mini';
   GROQ_KEY = (GROQ_KEY || '').trim();
 
   var codigo = maestraQuery;
@@ -794,7 +794,8 @@ async function busquedaMaestra() {
           { role: 'system', content: 'Sos un experto tecnico en filtros automotrices e industriales (aire, aceite, combustible, cabina, hidraulicos). Extraes datos tecnicos concretos de fuentes web y das respuestas estructuradas en espanol.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.1
+        temperature: 0.1,
+        max_completion_tokens: 900
       })
     });
 
@@ -803,6 +804,7 @@ async function busquedaMaestra() {
       try { var ej = await resp.json(); errMsg = (ej.error && ej.error.message) || ''; } catch (e0) {}
       if (GROQ_KEY === 'TU_API_KEY_DE_GROQ' || !GROQ_KEY) throw new Error('Falta cargar la clave de Groq en el codigo (variable GROQ_KEY).');
       if (resp.status === 401) throw new Error('Clave rechazada. ' + (errMsg || 'Revisa que sea una API key de Groq (empieza con "gsk_") copiada completa.'));
+      if (resp.status === 413) throw new Error('La busqueda trajo demasiado contenido. Proba con un codigo mas especifico.');
       if (resp.status === 429) throw new Error('Se alcanzo el limite de consultas por ahora. Proba de nuevo en unos minutos.');
       throw new Error('Error del servicio (' + resp.status + '). ' + errMsg);
     }
