@@ -706,7 +706,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 76 - compound-mini + limite de tokens');
+console.log('FilterEQ version 78 - prompt prioriza datos segun tipo de filtro');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -772,16 +772,22 @@ async function busquedaMaestra() {
   result.innerHTML = '<div class="mr-loading"><div class="spinner"></div><span>Buscando <em>' + esc(codigo) + '</em> en la web...</span></div>';
 
   var prompt =
-    'Busca en la web informacion tecnica del filtro automotriz o industrial con codigo "' + codigo + '". '
-    + 'Priorizar catalogos oficiales de fabricantes (WIX, MANN, Fram, Mahle, Donaldson, Fleetguard, Baldwin, Sakura, Hengst) y sitios de cross-reference confiables. '
+    'Busca en la web las especificaciones tecnicas COMPLETAS del filtro con codigo "' + codigo + '". '
+    + 'Es para un catalogo tecnico de filtros, necesito datos precisos de la ficha del fabricante, no solo equivalencias. '
+    + 'Prioriza las paginas OFICIALES del fabricante y hojas de especificaciones (ej: shop.deere.com, wixfilters.com, catalogos de MANN, Fram, Mahle, Donaldson, Fleetguard, Baldwin). '
+    + 'PASO 1: identifica primero el TIPO de filtro (aire, aceite, combustible, cabina, hidraulico). '
+    + 'PASO 2: segun el tipo, busca y prioriza los datos que corresponden:\n'
+    + '- Si es filtro de AIRE: lo mas importante son las MEDIDAS: alto, diametro externo y diametro interno (los de aire NO tienen rosca).\n'
+    + '- Si es filtro SELLADO de ACEITE o COMBUSTIBLE (spin-on / enroscable): lo mas importante es la ROSCA (thread size), ademas del alto y diametro. La rosca casi siempre figura en la ficha del fabricante, buscala especificamente y NO la omitas.\n'
+    + '- En TODOS los casos: busca las EQUIVALENCIAS de otras marcas.\n'
     + 'Responde en espanol con EXACTAMENTE esta estructura en markdown, sin texto extra antes ni despues:\n\n'
     + '## TIPO\n(aire / aceite / combustible / cabina / hidraulico)\n\n'
     + '## APLICACION\n(marcas y modelos de vehiculos o maquinas donde se usa)\n\n'
     + '## EQUIVALENCIAS\n(lista de codigos equivalentes, indicando la marca de cada uno)\n\n'
-    + '## MEDIDAS\n(alto, diametro externo, diametro interno en mm; si es panel usar largo/ancho/alto)\n\n'
-    + '## ROSCA\n(solo para filtros de aceite/combustible roscados; si es de aire poner "No aplica")\n\n'
+    + '## MEDIDAS\n(para filtros de aire: alto, diametro externo y diametro interno. Para el resto: alto y diametro externo. En mm o pulgadas segun la fuente. Si es panel usar largo/ancho/alto)\n\n'
+    + '## ROSCA\n(thread size / rosca tal como figura en la ficha, ej: 3/4-16, M20x1.5, 1-1/16 in. OBLIGATORIO para filtros roscados de aceite/combustible. Poner "No aplica" si es filtro de aire, cabina o cartucho sin rosca)\n\n'
     + 'Reglas estrictas: usa unicamente datos que encuentres en las fuentes, NO inventes. '
-    + 'Si algun dato no aparece, escribi "Sin datos". Se conciso y directo.';
+    + 'Si algun dato no aparece tras buscar, escribi "Sin datos". Se conciso y directo.';
 
   try {
     var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
