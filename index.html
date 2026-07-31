@@ -384,6 +384,30 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
   border-top:1px solid #1a237e;
   display:flex;align-items:center;gap:5px;
 }
+.catalog-match{
+  padding:12px 16px;
+  border-top:1px solid #1a237e;
+  background:rgba(30,201,138,.06);
+}
+.catalog-match.cm-none{
+  color:#7986cb;font-size:12px;background:transparent;
+}
+.cm-title{
+  font-size:12px;font-weight:700;color:#1ec98a;
+  margin-bottom:8px;letter-spacing:.3px;
+}
+.cm-list{display:flex;flex-wrap:wrap;gap:8px;}
+.cm-item{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--card);border:1.5px solid #1ec98a;
+  border-radius:7px;padding:6px 10px;cursor:pointer;
+  font-family:inherit;transition:background .15s,transform .1s;
+}
+.cm-item:hover{background:rgba(30,201,138,.15);transform:translateY(-1px);}
+.cm-item:active{transform:translateY(0);}
+.cm-code{font-weight:700;color:var(--text);font-size:13px;}
+.cm-brand{font-size:10px;color:#1ec98a;text-transform:uppercase;letter-spacing:.5px;}
+.cm-dim{font-size:10px;color:var(--muted);}
 .mr-loading{
   padding:24px;text-align:center;color:#7986cb;
   display:flex;flex-direction:column;align-items:center;gap:10px;
@@ -711,7 +735,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 85 - muestra resultados parciales, fallback amplio, temp 0');
+console.log('FilterEQ version 86 - cruce con catalogo tras busqueda maestra (equivalencias, medidas, rosca)');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -752,6 +776,136 @@ function showMaestraBtn(query) {
 function hideMaestraBtn() {
   var wrap = document.getElementById('maestra-wrap');
   if (wrap) wrap.className = '';
+}
+
+// ===== Cruce de resultados de Busqueda Maestra con el catalogo local =====
+function ccPrincipalCode(rec) {
+  var ft = getFilterType(rec);
+  var pb = (ft === 'fuel' || ft === 'oil')
+    ? ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].concat(BORDER.filter(function (b) { return ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].indexOf(b) < 0; }))
+    : BORDER;
+  for (var i = 0; i < pb.length; i++) { if (rec.b[pb[i]]) return { code: rec.b[pb[i]].split(' / ')[0], brand: pb[i] }; }
+  var k = Object.keys(rec.b)[0];
+  return { code: (rec.b[k] || '').split(' / ')[0], brand: k };
+}
+
+function ccFindByCode(codeNorm) {
+  for (var i = 0; i < INDEX.length; i++) {
+    var ct = INDEX[i].ct;
+    for (var j = 0; j < ct.length; j++) { if (ct[j].n === codeNorm) return INDEX[i]; }
+  }
+  return null;
+}
+
+function ccParseSections(text) {
+  var secs = {};
+  (text || '').split(/\n(?=##)/).forEach(function (block) {
+    var m = block.match(/##\s*([^\n:]+)[:]?\n?([\s\S]*)/);
+    if (m) secs[m[1].trim().toUpperCase()] = m[2] || '';
+  });
+  return secs;
+}
+
+function ccExtractCodes(txt) {
+  var out = [], re = /[A-Za-z0-9][A-Za-z0-9\-\/\.]{3,}/g, m;
+  while ((m = re.exec(txt)) !== null) {
+    var raw = m[0], cn = norm(raw);
+    var hasLetter = /[A-Z]/.test(cn), digits = /^\d+$/.test(cn);
+    // aceptar codigos alfanumericos (>=4) o numericos (>=5); descartar numeros sueltos cortos (medidas)
+    if ((hasLetter && cn.length >= 4) || (digits && cn.length >= 5)) out.push(cn);
+  }
+  return out;
+}
+
+function ccExtractNum(txt, labels) {
+  for (var i = 0; i < labels.length; i++) {
+    var re = new RegExp(labels[i] + '[^0-9]{0,15}(\\d{2,4})', 'i');
+    var m = (txt || '').match(re);
+    if (m) return parseFloat(m[1]);
+  }
+  return null;
+}
+
+function ccNormThread(s) {
+  return String(s || '').toLowerCase().replace(/\s+/g, '').replace(/,/g, '.').replace(/-/g, 'x');
+}
+
+function crossCheckCatalog(text) {
+  var secs = ccParseSections(text);
+  var tipo = (secs['TIPO'] || '').toLowerCase();
+  var ft = tipo.indexOf('aire') >= 0 ? 'air'
+    : (tipo.indexOf('aceite') >= 0 ? 'oil'
+      : ((tipo.indexOf('combustible') >= 0 || tipo.indexOf('gasoil') >= 0 || tipo.indexOf('diesel') >= 0) ? 'fuel'
+        : (tipo.indexOf('cabina') >= 0 ? 'cabin' : 'other')));
+
+  // 1) Match por EQUIVALENCIAS (exacto, quitando prefijo de marca; prioriza precision)
+  var BRANDW = ['MANN', 'WIX', 'FRAM', 'BOSCH', 'MAHLE', 'DONALDSON', 'FLEETGUARD', 'BALDWIN', 'SAKURA', 'HENGST', 'WEGA', 'EMAFI', 'MAXFIL', 'PROFILTER', 'FARO', 'MARENO', 'TECFIL', 'PUROLATOR', 'PRIX', 'HASTINGS', 'HASTING', 'LUBERFINER', 'MASTERFILT', 'LANSS', 'FAMEL', 'TECNECO', 'OEM', 'ORIGINAL'];
+  var tokMap = {};
+  for (var qi = 0; qi < INDEX.length; qi++) {
+    var ctk = INDEX[qi].ct;
+    for (var qj = 0; qj < ctk.length; qj++) { var tn = ctk[qj].n; if (tn.length >= 4 && !(tn in tokMap)) tokMap[tn] = INDEX[qi]; }
+  }
+  var itemsN = (secs['EQUIVALENCIAS'] || '').split(/[\n,;\u00b7\u2022]+/).map(function (s) { return norm(s); }).filter(function (s) { return s.length >= 4; });
+  var found = [], seen = {};
+  itemsN.forEach(function (it) {
+    var cands = [it];
+    for (var b = 0; b < BRANDW.length; b++) { if (it.indexOf(BRANDW[b]) === 0 && it.length > BRANDW[b].length) cands.push(it.slice(BRANDW[b].length)); }
+    for (var c = 0; c < cands.length; c++) {
+      var e = tokMap[cands[c]];
+      if (e) { var key = JSON.stringify(e.rec.b); if (!seen[key]) { seen[key] = 1; found.push(e); } }
+    }
+  });
+  if (found.length) return ccRender(found.slice(0, 6), 'equivalencia');
+
+  // 2) Fallback por especificaciones
+  var medText = secs['MEDIDAS'] || '';
+  var roscaText = secs['ROSCA'] || '';
+
+  if (ft === 'air') {
+    var alto = ccExtractNum(medText, ['alto', 'altura', 'height', 'largo']);
+    var dext = ccExtractNum(medText, ['ext', 'exterior', 'externo', 'outer', 'o\\.d', 'od']);
+    if (alto || dext) {
+      var cand = [];
+      for (var i = 0; i < INDEX.length; i++) {
+        var rec = INDEX[i].rec, mm = rec.m; if (!mm) continue;
+        var ftr = getFilterType(rec); if (ftr === 'oil' || ftr === 'fuel') continue;
+        var h = parseFirstNum(mm.h), d1 = parseFirstNum(mm.d1);
+        var diff = 0, ok = true;
+        if (alto) { if (h === null || Math.abs(h - alto) > 5) ok = false; else diff += Math.abs(h - alto); }
+        if (dext) { if (d1 === null || Math.abs(d1 - dext) > 5) ok = false; else diff += Math.abs(d1 - dext); }
+        if (ok) cand.push({ e: INDEX[i], diff: diff });
+      }
+      cand.sort(function (a, b) { return a.diff - b.diff; });
+      if (cand.length) return ccRender(cand.slice(0, 6).map(function (c) { return c.e; }), 'medidas');
+    }
+  } else if (ft === 'oil' || ft === 'fuel') {
+    var th = ccNormThread(roscaText.replace(/no aplica|sin datos/gi, '').split('\n')[0]);
+    var thm = th.match(/(m?\d+(\.\d+)?x[\d.\/]+|\d+\/\d+x\d+|\d+x\d+)/);
+    if (thm) {
+      var thread = thm[0], cand2 = [];
+      for (var k = 0; k < INDEX.length; k++) {
+        var rtc = INDEX[k].rtc; if (!rtc) continue;
+        if (rtc.indexOf(thread) >= 0 || thread.indexOf(rtc) >= 0) cand2.push(INDEX[k]);
+      }
+      if (cand2.length) return ccRender(cand2.slice(0, 8), 'rosca');
+    }
+  }
+
+  return '<div class="catalog-match cm-none">&#128270; Este filtro no aparece en tu cat&aacute;logo (ni por equivalencia, medidas o rosca).</div>';
+}
+
+function ccRender(entries, method) {
+  var label = method === 'equivalencia' ? 'por equivalencia' : (method === 'medidas' ? 'por medidas aproximadas' : 'por rosca');
+  var items = entries.map(function (e) {
+    var p = ccPrincipalCode(e.rec);
+    var mm = e.rec.m, dim = '';
+    if (method === 'medidas' && mm) dim = ' <span class="cm-dim">' + (mm.h ? mm.h + 'mm' : '') + (mm.d1 ? ' &Oslash;' + mm.d1 : '') + '</span>';
+    var safe = String(p.code).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return '<button class="cm-item" onclick="setSearch(\'' + safe + '\')">'
+      + '<span class="cm-code">' + esc(p.code) + '</span>'
+      + '<span class="cm-brand">' + esc(p.brand) + '</span>' + dim + '</button>';
+  }).join('');
+  return '<div class="catalog-match"><div class="cm-title">&#9989; En tu cat&aacute;logo (' + label + '):</div><div class="cm-list">' + items + '</div></div>';
 }
 
 async function busquedaMaestra() {
@@ -870,10 +1024,14 @@ async function busquedaMaestra() {
       }
     } catch (e1) {}
 
+    var catalogHtml = '';
+    try { catalogHtml = crossCheckCatalog(text); } catch (eCC) { catalogHtml = ''; }
+
     result.innerHTML =
       '<div class="mr-header"><span class="mr-logo">&#10024;</span>'
       + '<span class="mr-title">B&uacute;squeda Maestra &mdash; ' + esc(codigo) + '</span></div>'
       + '<div class="mr-body">' + formatted + '</div>'
+      + catalogHtml
       + srcHtml
       + '<div class="mr-disclaimer">&#9888;&#65039; Resultado generado por IA con b&uacute;squeda web &mdash; verificar antes de usarlo como referencia t&eacute;cnica.</div>';
 
