@@ -177,22 +177,26 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
   /* Hide elements that waste space */
   .stats,.header-divider,.exclusive-badge{display:none}
 
-  /* Medidas search bar: single compact row, horizontal scroll if needed */
+  /* Medidas search: boton arriba, panel apilado debajo (full width) */
   .medidas-search-bar{
-    padding:6px 10px;
-    gap:5px;
-    flex-wrap:nowrap;
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
+    padding:8px 12px;
+    gap:6px;
+    flex-wrap:wrap;
+    overflow:visible;
   }
-  .medidas-search-bar::-webkit-scrollbar{display:none}
-  .ms-field{flex-shrink:0;padding:3px 7px;gap:4px}
-  .ms-field-label{font-size:10px}
-  .ms-input{width:54px;font-size:13px;padding:5px 22px 5px 6px}
-  .ms-unit{font-size:9px;right:5px}
-  .ms-btn{flex-shrink:0;font-size:11px;padding:5px 10px}
-  .ms-clear{flex-shrink:0;font-size:10px;padding:4px 8px}
+  .ms-toggle{width:100%;text-align:center;font-size:13px;padding:9px 14px}
+  .ms-panel.open{margin-top:6px}
+  .ms-types{gap:6px}
+  .ms-type-btn{flex:1 1 42%;text-align:center;font-size:13px;padding:9px 6px}
+  .ms-inputs{flex-wrap:wrap;gap:8px}
+  .ms-field{flex:1 1 140px;padding:6px 10px;gap:6px;justify-content:space-between}
+  .ms-field-rosca{flex:1 1 100%}
+  .ms-field-label{font-size:12px}
+  .ms-input{width:72px;font-size:16px;padding:7px 26px 7px 8px}
+  .ms-input-text{width:100%;flex:1 1 auto;padding:7px 10px}
+  .ms-unit{font-size:9px;right:6px}
+  .ms-btn{flex:1 1 auto;font-size:14px;padding:9px 12px}
+  .ms-clear{flex:1 1 auto;font-size:13px;padding:8px 10px;display:block}
 
   /* Brand pills: horizontal scroll instead of wrapping */
   .brand-strip{
@@ -571,14 +575,14 @@ function selectMedidaType(type,btn){
   for(var i=0;i<btns.length;i++)btns[i].classList.remove('sel');
   if(btn)btn.classList.add('sel');
   var box=document.getElementById('msInputs');
-  function numF(label,id){return '<div class="ms-field"><span class="ms-field-label">'+label+'</span><div class="ms-input-wrap"><input type="number" class="ms-input" id="'+id+'" placeholder="mm" min="1" max="9999"><span class="ms-unit">mm</span></div></div>';}
+  function numF(label,id){return '<div class="ms-field"><span class="ms-field-label">'+label+'</span><div class="ms-input-wrap"><input type="number" class="ms-input" id="'+id+'" placeholder="" min="1" max="9999"><span class="ms-unit">mm</span></div></div>';}
   var btns2='<button class="ms-btn" onclick="doMedidaSearch()">Buscar</button><button class="ms-clear visible" onclick="clearMedidaSearch()">&#10005; Limpiar</button>';
   if(type==='tubular'){
     box.innerHTML=numF('Alto','msFieldA')+numF('Ancho (&#216;ext)','msFieldB')+btns2;
   }else if(type==='panel'||type==='cabin'){
     box.innerHTML=numF('Largo','msFieldA')+numF('Ancho','msFieldB')+btns2;
   }else{
-    box.innerHTML='<div class="ms-field"><span class="ms-field-label">Rosca</span><input type="text" class="ms-input ms-input-text" id="msFieldRosca" placeholder="ej: 3/4-16, M20x1.5, 27x2"></div>'+btns2;
+    box.innerHTML='<div class="ms-field ms-field-rosca"><span class="ms-field-label">Rosca</span><input type="text" class="ms-input ms-input-text" id="msFieldRosca" placeholder="ej: 3/4-16, M20x1.5, 27x2"></div>'+btns2;
   }
 }
 function doMedidaSearch(){
@@ -801,7 +805,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 91 - barra de medidas rediseñada: elegir tipo -> campos correctos o rosca');
+console.log('FilterEQ version 92 - layout movil de busqueda por medidas arreglado');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
