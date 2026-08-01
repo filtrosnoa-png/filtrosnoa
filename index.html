@@ -597,14 +597,20 @@ function doMedidaSearch(){
     msActive=true;
     filteredData=INDEX.filter(function(entry){
       var rtc=entry.rtc;if(!rtc)return false;
-      return rtc===thread||rtc.indexOf(thread)>=0||(rtc.length>=5&&thread.indexOf(rtc)>=0);
+      var matchesThread=(rtc===thread||rtc.indexOf(thread)>=0||(rtc.length>=5&&thread.indexOf(rtc)>=0));
+      if(!matchesThread)return false;
+      var ft=getFilterType(entry.rec);
+      if(msType==='oil')return ft==='oil';
+      if(msType==='fuel')return ft==='fuel';
+      return ft!=='oil'&&ft!=='fuel'&&ft!=='air'&&ft!=='cabin'; // hidraulico = otros roscados
     }).map(function(entry){return{entry:entry,mb:[],ia:false,ir:false,mdiff:0,mdim:undefined};});
     if(activeBrands.size>0){filteredData=filteredData.filter(function(r){return r.entry.ct.some(function(t){return activeBrands.has(t.brand);});});}
     lastQuery='';currentPage=1;openCard=null;
     document.getElementById('searchInput').value='';
     document.getElementById('clearBtn').className='clear-btn';
     renderPage();
-    document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros con rosca ~'+roscaVal;
+    var tnR={oil:'aceite',fuel:'combustible',hydraulic:'hidraulicos'}[msType]||'';
+    document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros '+tnR+' con rosca ~'+roscaVal;
     return;
   }
   // --- Busqueda por MEDIDAS (tubular / panel / habitaculo) ---
@@ -802,7 +808,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 93 - tipos en menu desplegable (mas compacto en celular)');
+console.log('FilterEQ version 94 - busqueda por rosca filtra por tipo (aceite/combustible/hidraulico)');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
