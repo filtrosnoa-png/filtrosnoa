@@ -92,6 +92,18 @@ main{flex:1;padding:16px 20px;max-width:1400px;width:100%;margin:0 auto}
 .ms-btn{background:var(--accent);color:#1a1200;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .ms-clear{background:none;border:1px solid var(--border2);color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;padding:5px 10px;border-radius:7px;display:none}
 .ms-clear.visible{display:block}
+.ms-toggle{background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.ms-toggle:hover{background:rgba(240,192,48,.12)}
+.ms-toggle.active{background:var(--accent);color:#1a1200}
+.ms-panel{display:none;width:100%;margin-top:8px}
+.ms-panel.open{display:block}
+.ms-types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ms-type-btn{background:var(--card);border:1.5px solid var(--border2);color:var(--text);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
+.ms-type-btn:hover{background:var(--surface)}
+.ms-type-btn.sel{background:var(--accent);color:#1a1200;border-color:var(--accent)}
+.ms-inputs{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ms-hint{font-size:11px;color:var(--muted);font-style:italic}
+.ms-input-text{width:170px;text-align:left;padding:7px 10px}
 .prox-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:rgba(240,192,48,.15);color:var(--accent);border:1px solid rgba(240,192,48,.3)}
 .detail-desc{font-size:12px;color:var(--muted2);padding:0 14px 12px;font-style:italic;border-top:1px solid var(--border);padding-top:8px;margin-top:0;line-height:1.5}
 .ftype-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;flex-shrink:0}
@@ -408,6 +420,14 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
 .cm-code{font-weight:700;color:var(--text);font-size:13px;}
 .cm-brand{font-size:10px;color:#1ec98a;text-transform:uppercase;letter-spacing:.5px;}
 .cm-dim{font-size:10px;color:var(--muted);}
+.cc-shape-btn{
+  background:var(--card);border:1.5px solid #5c6bc0;
+  border-radius:7px;padding:7px 12px;cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:600;color:var(--text);
+  transition:background .15s,border-color .15s;
+}
+.cc-shape-btn:hover{background:rgba(92,107,192,.15);}
+.cc-shape-btn.sel{background:#5c6bc0;color:#fff;border-color:#5c6bc0;}
 .mr-loading{
   padding:24px;text-align:center;color:#7986cb;
   display:flex;flex-direction:column;align-items:center;gap:10px;
@@ -448,7 +468,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
     <div class="stats" id="stats">Total: <strong>0</strong></div>
   </div>
   <div class="brand-strip" id="filterWrap"></div>
-<div class="medidas-search-bar"><div class="ms-field"><span class="ms-field-label">Alto</span><div class="ms-input-wrap"><input type="number" class="ms-input" id="msInputAlto" placeholder="mm" min="1" max="999" step="1"><span class="ms-unit">mm</span></div></div><div class="ms-field"><span class="ms-field-label">Ancho (&#216;ext)</span><div class="ms-input-wrap"><input type="number" class="ms-input" id="msInputAncho" placeholder="mm" min="1" max="999" step="1"><span class="ms-unit">mm</span></div></div><button class="ms-btn" onclick="doMedidaSearch()">Buscar</button><button class="ms-clear" id="msClearBtn" onclick="clearMedidaSearch()">&#10005; Limpiar</button></div>
+<div class="medidas-search-bar"><button class="ms-toggle" id="msToggle" onclick="toggleMedidaPanel()">&#128207; B&uacute;squeda por medidas / rosca</button><div id="msPanel" class="ms-panel"><div class="ms-types"><button class="ms-type-btn" onclick="selectMedidaType('tubular',this)">Aire tubular</button><button class="ms-type-btn" onclick="selectMedidaType('panel',this)">Aire panel</button><button class="ms-type-btn" onclick="selectMedidaType('cabin',this)">Habit&aacute;culo</button><button class="ms-type-btn" onclick="selectMedidaType('oil',this)">Aceite</button><button class="ms-type-btn" onclick="selectMedidaType('fuel',this)">Combustible</button><button class="ms-type-btn" onclick="selectMedidaType('hydraulic',this)">Hidr&aacute;ulico</button></div><div id="msInputs" class="ms-inputs"><span class="ms-hint">Eleg&iacute; un tipo de filtro para buscar</span></div></div></div>
 </header>
 
 <main id="main"></main>
@@ -485,6 +505,11 @@ function getFilterType(rec){
   if(/\bcabina\b|\bhabitaculo\b|\bcabin\b/.test(extra)) return 'cabin';
   if(/\baire\b|\bair\b/.test(extra)) return 'air';
   return 'other';
+}
+function isTubularAir(rec){
+  if(getFilterType(rec)!=='air') return false;
+  var t=((rec.m&&rec.m.t)||'').toLowerCase();
+  return t.indexOf('redondo')>=0||t.indexOf('tubular')>=0||t.indexOf('cilindr')>=0;
 }
 var FTYPE={
   cabin:{l:'Habitaculo',e:'\u{1F4A8}',c:'#38bdf8',bg:'rgba(56,189,248,.1)',bb:'rgba(56,189,248,.3)'},
@@ -534,53 +559,94 @@ function parseFirstNum(s){
   var match=String(s).match(/[0-9.]+/);
   return match?parseFloat(match[0]):null;
 }
+var msType=null;
+function toggleMedidaPanel(){
+  var p=document.getElementById('msPanel'),t=document.getElementById('msToggle');
+  var open=p.classList.toggle('open');
+  if(t)t.classList.toggle('active',open);
+}
+function selectMedidaType(type,btn){
+  msType=type;
+  var btns=document.querySelectorAll('.ms-type-btn');
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove('sel');
+  if(btn)btn.classList.add('sel');
+  var box=document.getElementById('msInputs');
+  function numF(label,id){return '<div class="ms-field"><span class="ms-field-label">'+label+'</span><div class="ms-input-wrap"><input type="number" class="ms-input" id="'+id+'" placeholder="mm" min="1" max="9999"><span class="ms-unit">mm</span></div></div>';}
+  var btns2='<button class="ms-btn" onclick="doMedidaSearch()">Buscar</button><button class="ms-clear visible" onclick="clearMedidaSearch()">&#10005; Limpiar</button>';
+  if(type==='tubular'){
+    box.innerHTML=numF('Alto','msFieldA')+numF('Ancho (&#216;ext)','msFieldB')+btns2;
+  }else if(type==='panel'||type==='cabin'){
+    box.innerHTML=numF('Largo','msFieldA')+numF('Ancho','msFieldB')+btns2;
+  }else{
+    box.innerHTML='<div class="ms-field"><span class="ms-field-label">Rosca</span><input type="text" class="ms-input ms-input-text" id="msFieldRosca" placeholder="ej: 3/4-16, M20x1.5, 27x2"></div>'+btns2;
+  }
+}
 function doMedidaSearch(){
-  var altoVal=parseFloat(document.getElementById('msInputAlto').value);
-  var anchoVal=parseFloat(document.getElementById('msInputAncho').value);
-  var hasAlto=!isNaN(altoVal)&&altoVal>0;
-  var hasAncho=!isNaN(anchoVal)&&anchoVal>0;
-  if(!hasAlto&&!hasAncho){alert('Ingresa al menos una medida en mm');return;}
+  if(!msType){alert('Elegi un tipo de filtro');return;}
+  // --- Busqueda por ROSCA (aceite / combustible / hidraulico) ---
+  if(msType==='oil'||msType==='fuel'||msType==='hydraulic'){
+    var el=document.getElementById('msFieldRosca');
+    var roscaVal=el?el.value.trim():'';
+    if(!roscaVal){alert('Ingresa la rosca');return;}
+    var thN=ccNormThread(roscaVal);
+    var thm=thN.match(/(m?\d+(\.\d+)?x[\d.\/]+|\d+\/\d+x\d+|\d+x\d+)/);
+    var thread=thm?thm[0]:thN;
+    msActive=true;
+    filteredData=INDEX.filter(function(entry){
+      var rtc=entry.rtc;if(!rtc)return false;
+      return rtc===thread||rtc.indexOf(thread)>=0||(rtc.length>=5&&thread.indexOf(rtc)>=0);
+    }).map(function(entry){return{entry:entry,mb:[],ia:false,ir:false,mdiff:0,mdim:undefined};});
+    if(activeBrands.size>0){filteredData=filteredData.filter(function(r){return r.entry.ct.some(function(t){return activeBrands.has(t.brand);});});}
+    lastQuery='';currentPage=1;openCard=null;
+    document.getElementById('searchInput').value='';
+    document.getElementById('clearBtn').className='clear-btn';
+    renderPage();
+    document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros con rosca ~'+roscaVal;
+    return;
+  }
+  // --- Busqueda por MEDIDAS (tubular / panel / habitaculo) ---
+  var aEl=document.getElementById('msFieldA'),bEl=document.getElementById('msFieldB');
+  var aVal=parseFloat(aEl?aEl.value:''),bVal=parseFloat(bEl?bEl.value:'');
+  var hasA=!isNaN(aVal)&&aVal>0,hasB=!isNaN(bVal)&&bVal>0;
+  if(!hasA&&!hasB){alert('Ingresa al menos una medida en mm');return;}
+  var tubular=(msType==='tubular');
   msActive=true;
   filteredData=INDEX.filter(function(entry){
     var m=entry.rec.m;if(!m)return false;
-    if(hasAlto){
-      var h=parseFirstNum(m.h);if(h===null)return false;
-      var ft=getFilterType(entry.rec);
-      if(ft==='fuel'||ft==='oil')return false;
-    }
-    if(hasAncho){
-      var d1=parseFirstNum(m.d1);if(d1===null)return false;
-    }
+    if(tubular){if(!isTubularAir(entry.rec))return false;}
+    else if(msType==='panel'){if(getFilterType(entry.rec)!=='air'||String(m.t||'').toLowerCase().indexOf('panel')<0)return false;}
+    else{if(getFilterType(entry.rec)!=='cabin')return false;}
+    var f1=tubular?parseFirstNum(m.h):parseFirstNum(m.d1);
+    var f2=tubular?parseFirstNum(m.d1):parseFirstNum(m.d2);
+    if(hasA&&f1===null)return false;
+    if(hasB&&f2===null)return false;
     return true;
   }).map(function(entry){
     var m=entry.rec.m;
-    var h=hasAlto?parseFirstNum(m.h):null;
-    var d1=hasAncho?parseFirstNum(m.d1):null;
+    var f1=tubular?parseFirstNum(m.h):parseFirstNum(m.d1);
+    var f2=tubular?parseFirstNum(m.d1):parseFirstNum(m.d2);
     var diff=0;
-    if(hasAlto)diff+=Math.abs(h-altoVal);
-    if(hasAncho)diff+=Math.abs(d1-anchoVal);
-    return{entry:entry,mb:[],ia:false,ir:false,mdiff:diff,mdim:h!==null?h:d1};
+    if(hasA)diff+=Math.abs(f1-aVal);
+    if(hasB)diff+=Math.abs(f2-bVal);
+    return{entry:entry,mb:[],ia:false,ir:false,mdiff:diff,mdim:f1!==null?f1:f2};
   }).sort(function(a,b){return a.mdiff-b.mdiff;});
-  if(activeBrands.size>0){
-    filteredData=filteredData.filter(function(r){
-      return r.entry.ct.some(function(t){return activeBrands.has(t.brand);});
-    });
-  }
+  if(activeBrands.size>0){filteredData=filteredData.filter(function(r){return r.entry.ct.some(function(t){return activeBrands.has(t.brand);});});}
   lastQuery='';currentPage=1;openCard=null;
   document.getElementById('searchInput').value='';
   document.getElementById('clearBtn').className='clear-btn';
-  document.getElementById('msClearBtn').className='ms-clear visible';
   renderPage();
+  var tn={tubular:'aire tubular',panel:'aire panel',cabin:'habitaculo'}[msType];
   var parts=[];
-  if(hasAlto)parts.push('Alto~'+altoVal+'mm');
-  if(hasAncho)parts.push('Ancho~'+anchoVal+'mm');
-  document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros '+parts.join(', ');
+  if(hasA)parts.push((tubular?'Alto':'Largo')+'~'+aVal+'mm');
+  if(hasB)parts.push((tubular?'\u00d8ext':'Ancho')+'~'+bVal+'mm');
+  document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros '+tn+' '+parts.join(', ');
 }
 function clearMedidaSearch(){
-  msActive=false;
-  document.getElementById('msInputAlto').value='';
-  document.getElementById('msInputAncho').value='';
-  document.getElementById('msClearBtn').className='ms-clear';
+  msActive=false;msType=null;
+  var box=document.getElementById('msInputs');
+  if(box)box.innerHTML='<span class="ms-hint">Eleg&iacute; un tipo de filtro para buscar</span>';
+  var btns=document.querySelectorAll('.ms-type-btn');
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove('sel');
   filteredData=[];lastQuery='';currentPage=1;openCard=null;
   renderPage();
   document.getElementById('stats').innerHTML='Total: <strong>'+DATA.length.toLocaleString()+'</strong>';
@@ -687,7 +753,7 @@ function renderPage(){
   slice.forEach(({entry,mb,ia,ir,mdiff,mdim},li)=>{
     const gi=start+li,rec=entry.rec,cid=`c${gi}`;
     const ft0=getFilterType(rec);
-    const pborder=(ft0==='fuel'||ft0==='oil')?['WIX','MAXFIL','EMAFI','PROFILTER'].concat(BORDER.filter(b=>!['WIX','MAXFIL','EMAFI','PROFILTER'].includes(b))):BORDER;
+    const pborder=isTubularAir(rec)?['WIX','MAXFIL','EMAFI'].concat(BORDER.filter(b=>!['WIX','MAXFIL','EMAFI'].includes(b))):((ft0==='fuel'||ft0==='oil')?['WIX','MAXFIL','EMAFI','PROFILTER'].concat(BORDER.filter(b=>!['WIX','MAXFIL','EMAFI','PROFILTER'].includes(b))):BORDER);
     const bkeys=pborder.filter(b=>rec.b[b]);
     const pb=bkeys[0],pc=rec.b[pb]?.split(' / ')[0]||'',pcolor=BC[pb]||'#888';
     const applic=rec.a?.[0]||'',isOpen=openCard===gi;
@@ -735,7 +801,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 87 - cruce arreglado: hidraulicos, simbolo x, roscas basura');
+console.log('FilterEQ version 91 - barra de medidas rediseñada: elegir tipo -> campos correctos o rosca');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -779,11 +845,14 @@ function hideMaestraBtn() {
 }
 
 // ===== Cruce de resultados de Busqueda Maestra con el catalogo local =====
+var ccLastText = '';
 function ccPrincipalCode(rec) {
   var ft = getFilterType(rec);
-  var pb = (ft === 'fuel' || ft === 'oil')
-    ? ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].concat(BORDER.filter(function (b) { return ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].indexOf(b) < 0; }))
-    : BORDER;
+  var pb = isTubularAir(rec)
+    ? ['WIX', 'MAXFIL', 'EMAFI'].concat(BORDER.filter(function (b) { return ['WIX', 'MAXFIL', 'EMAFI'].indexOf(b) < 0; }))
+    : ((ft === 'fuel' || ft === 'oil')
+      ? ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].concat(BORDER.filter(function (b) { return ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].indexOf(b) < 0; }))
+      : BORDER);
   for (var i = 0; i < pb.length; i++) { if (rec.b[pb[i]]) return { code: rec.b[pb[i]].split(' / ')[0], brand: pb[i] }; }
   var k = Object.keys(rec.b)[0];
   return { code: (rec.b[k] || '').split(' / ')[0], brand: k };
@@ -831,6 +900,7 @@ function ccNormThread(s) {
 }
 
 function crossCheckCatalog(text) {
+  ccLastText = text || '';
   var secs = ccParseSections(text);
   var tipo = (secs['TIPO'] || '').toLowerCase();
   var ft = tipo.indexOf('aire') >= 0 ? 'air'
@@ -875,41 +945,80 @@ function crossCheckCatalog(text) {
     if (cand2.length) return ccRender(cand2.slice(0, 8), 'rosca');
   }
 
-  // 2b) Por MEDIDAS: filtros de aire (o cuando no hubo rosca), por alto y diametro externo
-  if (ft === 'air' || !thm) {
-    var alto = ccExtractNum(medText, ['alto', 'altura', 'height', 'largo']);
-    var dext = ccExtractNum(medText, ['ext', 'exterior', 'externo', 'outer', 'o\\.d', 'od', 'di\\u00e1metro', 'diametro']);
-    if (alto || dext) {
-      var cand = [];
-      for (var i = 0; i < INDEX.length; i++) {
-        var rec = INDEX[i].rec, mm = rec.m; if (!mm) continue;
-        var ftr = getFilterType(rec); if (ftr === 'oil' || ftr === 'fuel') continue;
-        var h = parseFirstNum(mm.h), d1 = parseFirstNum(mm.d1);
-        var diff = 0, ok = true;
-        if (alto) { if (h === null || Math.abs(h - alto) > 5) ok = false; else diff += Math.abs(h - alto); }
-        if (dext) { if (d1 === null || Math.abs(d1 - dext) > 5) ok = false; else diff += Math.abs(d1 - dext); }
-        if (ok && (alto || dext)) cand.push({ e: INDEX[i], diff: diff });
-      }
-      cand.sort(function (a, b) { return a.diff - b.diff; });
-      if (cand.length) return ccRender(cand.slice(0, 6).map(function (c) { return c.e; }), 'medidas');
-    }
-  }
-
-  return '<div class="catalog-match cm-none">&#128270; Este filtro no aparece en tu cat&aacute;logo (ni por equivalencia, medidas o rosca).</div>';
+  // 2b) Por MEDIDAS: mostrar botones para que el usuario elija la forma del filtro
+  return ccShapeButtons();
 }
 
-function ccRender(entries, method) {
-  var label = method === 'equivalencia' ? 'por equivalencia' : (method === 'medidas' ? 'por medidas aproximadas' : 'por rosca');
-  var items = entries.map(function (e) {
+function ccShapeButtons() {
+  return '<div class="catalog-match cc-ask">'
+    + '<div class="cm-title">&#128207; No lo encontr&eacute; por equivalencia. Busc&aacute; por medidas seg&uacute;n el tipo:</div>'
+    + '<div class="cm-list">'
+    + '<button class="cc-shape-btn" onclick="ccSearchByShape(\'tubular\',this)">Aire tubular</button>'
+    + '<button class="cc-shape-btn" onclick="ccSearchByShape(\'panel\',this)">Aire panel</button>'
+    + '<button class="cc-shape-btn" onclick="ccSearchByShape(\'cabin\',this)">Habit&aacute;culo</button>'
+    + '</div><div id="cc-shape-results"></div></div>';
+}
+
+function ccSearchByShape(shape, btn) {
+  var out = document.getElementById('cc-shape-results');
+  if (!out) return;
+  if (btn && btn.parentNode) { var bs = btn.parentNode.querySelectorAll('.cc-shape-btn'); for (var x = 0; x < bs.length; x++) bs[x].classList.remove('sel'); btn.classList.add('sel'); }
+  var secs = ccParseSections(ccLastText || '');
+  var medText = secs['MEDIDAS'] || '';
+  var cand = [];
+  if (shape === 'tubular') {
+    var alto = ccExtractNum(medText, ['alto', 'altura', 'height']);
+    var dext = ccExtractNum(medText, ['di\\u00e1metro ?ext', 'diametro ?ext', 'ext', 'exterior', 'externo', 'outer', 'o\\.?d']);
+    if (!alto && !dext) { out.innerHTML = ccNoDims(); return; }
+    for (var i = 0; i < INDEX.length; i++) {
+      var r = INDEX[i].rec, m = r.m; if (!m || !isTubularAir(r)) continue;
+      var h = parseFirstNum(m.h), d1 = parseFirstNum(m.d1), diff = 0, ok = true;
+      if (alto) { if (h === null || Math.abs(h - alto) > 6) ok = false; else diff += Math.abs(h - alto); }
+      if (dext) { if (d1 === null || Math.abs(d1 - dext) > 6) ok = false; else diff += Math.abs(d1 - dext); }
+      if (ok) cand.push({ e: INDEX[i], diff: diff });
+    }
+  } else {
+    var largo = ccExtractNum(medText, ['largo', 'length', 'long']);
+    var ancho = ccExtractNum(medText, ['ancho', 'width']);
+    if (!largo && !ancho) { out.innerHTML = ccNoDims(); return; }
+    for (var j = 0; j < INDEX.length; j++) {
+      var rr = INDEX[j].rec, mm = rr.m; if (!mm) continue;
+      var ftj = getFilterType(rr);
+      if (shape === 'panel') { if (ftj !== 'air' || (String(mm.t || '').toLowerCase().indexOf('panel') < 0)) continue; }
+      else { if (ftj !== 'cabin') continue; }
+      var l = parseFirstNum(mm.d1), a = parseFirstNum(mm.d2), df = 0, okk = true;
+      if (largo) { if (l === null || Math.abs(l - largo) > 6) okk = false; else df += Math.abs(l - largo); }
+      if (ancho) { if (a === null || Math.abs(a - ancho) > 6) okk = false; else df += Math.abs(a - ancho); }
+      if (okk) cand.push({ e: INDEX[j], diff: df });
+    }
+  }
+  cand.sort(function (a, b) { return a.diff - b.diff; });
+  if (!cand.length) { out.innerHTML = '<div class="cm-none" style="padding:8px 0 0">No se encontraron filtros de ese tipo con esas medidas.</div>'; return; }
+  out.innerHTML = '<div class="cm-list" style="margin-top:8px">' + ccRenderItems(cand.slice(0, 8).map(function (c) { return c.e; }), shape) + '</div>';
+}
+
+function ccNoDims() {
+  return '<div class="cm-none" style="padding:8px 0 0">La b&uacute;squeda maestra no trajo medidas claras para comparar. Revis&aacute; el resultado de arriba.</div>';
+}
+
+function ccRenderItems(entries, method) {
+  return entries.map(function (e) {
     var p = ccPrincipalCode(e.rec);
     var mm = e.rec.m, dim = '';
-    if (method === 'medidas' && mm) dim = ' <span class="cm-dim">' + (mm.h ? mm.h + 'mm' : '') + (mm.d1 ? ' &Oslash;' + mm.d1 : '') + '</span>';
+    if (mm && (method === 'medidas' || method === 'tubular' || method === 'panel' || method === 'cabin')) {
+      if (method === 'panel' || method === 'cabin') dim = ' <span class="cm-dim">' + (mm.d1 ? mm.d1 : '') + (mm.d2 ? '\u00d7' + mm.d2 : '') + '</span>';
+      else dim = ' <span class="cm-dim">' + (mm.h ? mm.h + 'mm' : '') + (mm.d1 ? ' \u00d8' + mm.d1 : '') + '</span>';
+    }
     var safe = String(p.code).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     return '<button class="cm-item" onclick="setSearch(\'' + safe + '\')">'
       + '<span class="cm-code">' + esc(p.code) + '</span>'
       + '<span class="cm-brand">' + esc(p.brand) + '</span>' + dim + '</button>';
   }).join('');
-  return '<div class="catalog-match"><div class="cm-title">&#9989; En tu cat&aacute;logo (' + label + '):</div><div class="cm-list">' + items + '</div></div>';
+}
+
+function ccRender(entries, method) {
+  var label = method === 'equivalencia' ? 'por equivalencia' : (method === 'medidas' ? 'por medidas aproximadas' : 'por rosca');
+  return '<div class="catalog-match"><div class="cm-title">&#9989; En tu cat&aacute;logo (' + label + '):</div><div class="cm-list">' + ccRenderItems(entries, method) + '</div></div>';
 }
 
 async function busquedaMaestra() {
@@ -947,7 +1056,7 @@ async function busquedaMaestra() {
     + '## TIPO\n(aire / aceite / combustible / cabina / hidraulico)\n\n'
     + '## APLICACION\n(marcas y modelos de vehiculos o maquinas donde se usa)\n\n'
     + '## EQUIVALENCIAS\n(lista de codigos equivalentes, indicando la marca de cada uno)\n\n'
-    + '## MEDIDAS\n(para filtros de aire: alto, diametro externo y diametro interno. Para el resto: alto y diametro externo. En mm o pulgadas segun la fuente. Si es panel usar largo/ancho/alto)\n\n'
+    + '## MEDIDAS\n(Si el filtro es cilindrico/tubular/redondo: indicar Alto, Diametro exterior y Diametro interior. Si es panel o rectangular, o filtro de habitaculo/cabina: indicar Largo, Ancho y Alto. Etiquetar cada medida claramente. En mm.)\n\n'
     + '## ROSCA\n(thread size / rosca tal como figura en la ficha, ej: 3/4-16, M20x1.5, 1-1/16 in. OBLIGATORIO para filtros roscados de aceite/combustible. Poner "No aplica" si es filtro de aire, cabina o cartucho sin rosca)\n\n'
     + 'Reglas estrictas: usa unicamente datos que encuentres en las fuentes, NO inventes. '
     + 'Si algun dato no aparece tras buscar, escribi "Sin datos". Se conciso y directo.';
@@ -999,7 +1108,7 @@ async function busquedaMaestra() {
     var sinDatosCount = (text.match(/sin datos/gi) || []).length;
     // Solo rechazar si TODOS los campos (5) vinieron vacios; si hay info parcial, mostrarla
     var sinDatosCount = (text.match(/sin datos/gi) || []).length;
-    if (sinDatosCount >= 5) throw new Error('No se encontraron datos en la web para "' + codigo + '". Proba escribiendo el codigo completo, con la marca, o verifica que sea correcto.');
+    if (sinDatosCount >= 5) throw new Error('No se obtuvieron datos para "' + codigo + '". Si hiciste varias busquedas seguidas, espera ~1 minuto (la cuenta gratuita limita el uso por minuto) y proba de nuevo. Si no, verifica que el codigo sea correcto.');
 
     var formatted = text
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
