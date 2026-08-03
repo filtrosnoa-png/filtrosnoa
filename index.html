@@ -463,7 +463,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
     <div class="header-divider"></div>
     <div class="search-wrap">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="searchInput" placeholder="Código, marca, modelo de vehículo..." autocomplete="off" spellcheck="false">
+      <input type="text" id="searchInput" placeholder="Código, marca, modelo de vehículo..." autocomplete="off" spellcheck="false" onfocus="collapseMedidaPanel()">
       <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
     </div>
     <div class="exclusive-badge">
@@ -491,8 +491,8 @@ let DATA=[];
 
 let IMGS={};
 
-const BORDER=['EMAFI','MAXFIL','PROFILTER','WIX','MANN','FARO','WEGA','FRAM','MARENO','MASTERFILT','HASTING','LANSS','TECNECO','SAKURA','MAHLE','TECFIL','PRIX','PUROLATOR','BALDWIN','FAMEL','FLEETGUARD','OCUATRO','OEM','OTRAS','OTROS'];
-const BC={EMAFI:'#f0a500',MAXFIL:'#3a7ffc',PROFILTER:'#1ec98a',WIX:'#e0534a',MANN:'#c084fc',WEGA:'#38bdf8',FRAM:'#fb923c',MARENO:'#a3e635',MASTERFILT:'#f472b6',HASTING:'#e2b714',LANSS:'#a78bfa',TECNECO:'#34d399',FARO:'#fbbf24',SAKURA:'#f9a8d4',MAHLE:'#93c5fd',TECFIL:'#f87171',PRIX:'#6ee7b7',PUROLATOR:'#d946ef',BALDWIN:'#fb7185',FAMEL:'#a78bfa',FLEETGUARD:'#67e8f9',OCUATRO:'#2dd4bf',OEM:'#94a3b8',OTRAS:'#cbd5e1',OTROS:'#cbd5e1'};
+const BORDER=['EMAFI','MAXFIL','PROFILTER','WIX','MANN','FARO','WEGA','FRAM','MARENO','MASTERFILT','HASTING','LANSS','TECNECO','SAKURA','MAHLE','TECFIL','PRIX','PUROLATOR','BALDWIN','FAMEL','FLEETGUARD','DONALDSON','OCUATRO','OEM','OTRAS','OTROS'];
+const BC={EMAFI:'#f0a500',MAXFIL:'#3a7ffc',PROFILTER:'#1ec98a',WIX:'#e0534a',MANN:'#c084fc',WEGA:'#38bdf8',FRAM:'#fb923c',MARENO:'#a3e635',MASTERFILT:'#f472b6',HASTING:'#e2b714',LANSS:'#a78bfa',TECNECO:'#34d399',FARO:'#fbbf24',SAKURA:'#f9a8d4',MAHLE:'#93c5fd',TECFIL:'#f87171',PRIX:'#6ee7b7',PUROLATOR:'#d946ef',BALDWIN:'#fb7185',FAMEL:'#a78bfa',FLEETGUARD:'#67e8f9',DONALDSON:'#818cf8',OCUATRO:'#2dd4bf',OEM:'#94a3b8',OTRAS:'#cbd5e1',OTROS:'#cbd5e1'};
 const IMG_BRANDS=['EMAFI','PROFILTER','MAXFIL','WIX','FARO','WEGA'];
 const PAGE_SIZE=30;
 let currentPage=1,filteredData=[],activeBrands=new Set(),openCard=null,lastQuery='';
@@ -569,6 +569,11 @@ function toggleMedidaPanel(){
   var p=document.getElementById('msPanel'),t=document.getElementById('msToggle');
   var open=p.classList.toggle('open');
   if(t)t.classList.toggle('active',open);
+}
+function collapseMedidaPanel(){
+  var p=document.getElementById('msPanel'),t=document.getElementById('msToggle');
+  if(p)p.classList.remove('open');
+  if(t)t.classList.remove('active');
 }
 function selectMedidaType(type){
   msType=type||null;
@@ -808,7 +813,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 94 - busqueda por rosca filtra por tipo (aceite/combustible/hidraulico)');
+console.log('FilterEQ version 96 - panel de medidas se contrae al tocar busqueda por codigo');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
