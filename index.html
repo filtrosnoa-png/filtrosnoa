@@ -262,7 +262,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
   position:fixed;inset:0;z-index:9999;
   background:rgba(0,0,0,.75);
   backdrop-filter:blur(4px);
-  display:flex;align-items:center;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   padding:16px;
   animation:fadeIn .3s ease;
 }
@@ -818,7 +818,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 99 - banner de ofertas desactivado temporalmente');
+console.log('FilterEQ version 100 - banner ofertas oculto (JS comentado + CSS display none)');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
