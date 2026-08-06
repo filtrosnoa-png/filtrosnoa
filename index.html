@@ -818,7 +818,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 98 - al tocar busqueda por codigo se borra el texto');
+console.log('FilterEQ version 99 - banner de ofertas desactivado temporalmente');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -1215,12 +1215,14 @@ function closeBanner(){
   setTimeout(function(){o.style.display='none';},260);
   try{sessionStorage.setItem('banner-closed','1');}catch(e){}
 }
+/* ===== Banner de ofertas DESACTIVADO temporalmente (reactivar con las ofertas de AGOSTO) =====
 try{
   if(sessionStorage.getItem('banner-closed')!=='1'){
     var o=document.getElementById('oferta-overlay');
     if(o)o.style.display='flex';
   }
 }catch(e){}
+===== fin banner desactivado ===== */
 </script>
 </body>
 </html>
