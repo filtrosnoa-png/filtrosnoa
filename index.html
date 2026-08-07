@@ -505,6 +505,7 @@ function getFilterType(rec){
   if(/EFC[ ]?\d|FF-|EC\d|UC\d/.test(all)) return 'fuel';
   if(/ELM[ ]?\d|OF-|UL\d|EL\d|ULF|EUS[ ]?\d/.test(all)) return 'oil';
   var extra=((rec.d||'')+' '+((rec.m&&rec.m.t)||'')).toLowerCase();
+  if(/hidraulic|hydraulic/.test(extra)) return 'hydraulic';
   if(/\baceite\b|\boil\b/.test(extra)) return 'oil';
   if(/\bcombustible\b|\bgasoil\b|\bdiesel\b|\bnafta\b/.test(extra)) return 'fuel';
   if(/\bcabina\b|\bhabitaculo\b|\bcabin\b/.test(extra)) return 'cabin';
@@ -521,6 +522,7 @@ var FTYPE={
   air:  {l:'Aire',      e:'\u{1F4A8}',c:'#1ec98a',bg:'rgba(30,201,138,.1)',bb:'rgba(30,201,138,.3)'},
   fuel: {l:'Combustible',e:'\u26FD',   c:'#fb923c',bg:'rgba(251,146,60,.1)', bb:'rgba(251,146,60,.3)'},
   oil:  {l:'Aceite',    e:'\u{1F6E2}', c:'#f0c030',bg:'rgba(240,192,48,.1)', bb:'rgba(240,192,48,.3)'},
+  hydraulic:{l:'Hidraulico',e:'\u{1F4A7}',c:'#60a5fa',bg:'rgba(96,165,250,.1)',bb:'rgba(96,165,250,.3)'},
   other:{l:'Filtro',    e:'\u2699',    c:'#94a3b8',bg:'rgba(148,163,184,.1)',bb:'rgba(148,163,184,.3)'}
 };
 function ftBadge(ft){
@@ -607,7 +609,8 @@ function doMedidaSearch(){
     msActive=true;
     filteredData=INDEX.filter(function(entry){
       var rtc=entry.rtc;if(!rtc)return false;
-      var matchesThread=(rtc===thread||rtc.indexOf(thread)>=0||(rtc.length>=5&&thread.indexOf(rtc)>=0));
+      var rtcL=rtc.replace(/x/g,''),threadL=thread.replace(/x/g,'');
+      var matchesThread=(rtc===thread||rtc.indexOf(thread)>=0||(rtc.length>=5&&thread.indexOf(rtc)>=0)||(rtcL.length>=3&&threadL.length>=3&&(rtcL.indexOf(threadL)>=0||threadL.indexOf(rtcL)>=0)));
       if(!matchesThread)return false;
       var ft=getFilterType(entry.rec);
       if(msType==='oil')return ft==='oil';
@@ -708,7 +711,8 @@ function matchRecord(entry,q){
   for(const tk of entry.ct)if(tk.n.includes(qn))mb.add(tk.brand);
   const ia=entry.at.some(a=>a.includes(ql));
   const id=entry.dt&&entry.dt.includes(ql);
-  const ir=(entry.rt&&entry.rt.includes(ql))||(entry.rtc&&qlc&&entry.rtc.includes(qlc));
+  const rtcLoose=entry.rtc?entry.rtc.replace(/x/g,''):'',qlcLoose=qlc.replace(/x/g,'');
+  const ir=(entry.rt&&entry.rt.includes(ql))||(entry.rtc&&qlc&&entry.rtc.includes(qlc))||(rtcLoose&&qlcLoose&&rtcLoose.length>=3&&rtcLoose.includes(qlcLoose));
   return{match:mb.size>0||ia||id||ir,mb:[...mb],ia:ia||id,ir};
 }
 
@@ -770,7 +774,7 @@ function renderPage(){
   slice.forEach(({entry,mb,ia,ir,mdiff,mdim},li)=>{
     const gi=start+li,rec=entry.rec,cid=`c${gi}`;
     const ft0=getFilterType(rec);
-    const pborder=isTubularAir(rec)?['WIX','MAXFIL','EMAFI'].concat(BORDER.filter(b=>!['WIX','MAXFIL','EMAFI'].includes(b))):((ft0==='fuel'||ft0==='oil')?['WIX','MAXFIL','EMAFI','PROFILTER'].concat(BORDER.filter(b=>!['WIX','MAXFIL','EMAFI','PROFILTER'].includes(b))):BORDER);
+    const pborder=isTubularAir(rec)?['WIX','MAXFIL','EMAFI'].concat(BORDER.filter(b=>!['WIX','MAXFIL','EMAFI'].includes(b))):((ft0==='fuel'||ft0==='oil'||ft0==='hydraulic')?['WIX','MAXFIL','EMAFI','PROFILTER'].concat(BORDER.filter(b=>!['WIX','MAXFIL','EMAFI','PROFILTER'].includes(b))):BORDER);
     const bkeys=pborder.filter(b=>rec.b[b]);
     const pb=bkeys[0],pc=rec.b[pb]?.split(' / ')[0]||'',pcolor=BC[pb]||'#888';
     const applic=rec.a?.[0]||'',isOpen=openCard===gi;
@@ -818,7 +822,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 100 - banner ofertas oculto (JS comentado + CSS display none)');
+console.log('FilterEQ version 102 - busqueda por rosca acepta formato con guion o con espacio/x');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -867,7 +871,7 @@ function ccPrincipalCode(rec) {
   var ft = getFilterType(rec);
   var pb = isTubularAir(rec)
     ? ['WIX', 'MAXFIL', 'EMAFI'].concat(BORDER.filter(function (b) { return ['WIX', 'MAXFIL', 'EMAFI'].indexOf(b) < 0; }))
-    : ((ft === 'fuel' || ft === 'oil')
+    : ((ft === 'fuel' || ft === 'oil' || ft === 'hydraulic')
       ? ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].concat(BORDER.filter(function (b) { return ['WIX', 'MAXFIL', 'EMAFI', 'PROFILTER'].indexOf(b) < 0; }))
       : BORDER);
   for (var i = 0; i < pb.length; i++) { if (rec.b[pb[i]]) return { code: rec.b[pb[i]].split(' / ')[0], brand: pb[i] }; }
@@ -954,10 +958,11 @@ function crossCheckCatalog(text) {
   var th = ccNormThread(roscaText.replace(/no aplica|sin datos/gi, '').split('\n')[0]);
   var thm = th.match(/(m?\d+(\.\d+)?x[\d.\/]+|\d+\/\d+x\d+|\d+x\d+)/);
   if (thm) {
-    var thread = thm[0], cand2 = [];
+    var thread = thm[0], cand2 = [], threadL = thread.replace(/x/g, '');
     for (var k = 0; k < INDEX.length; k++) {
       var rtc = INDEX[k].rtc; if (!rtc) continue;
-      if (rtc === thread || rtc.indexOf(thread) >= 0 || (rtc.length >= 5 && thread.indexOf(rtc) >= 0)) cand2.push(INDEX[k]);
+      var rtcL = rtc.replace(/x/g, '');
+      if (rtc === thread || rtc.indexOf(thread) >= 0 || (rtc.length >= 5 && thread.indexOf(rtc) >= 0) || (rtcL.length >= 3 && threadL.length >= 3 && (rtcL.indexOf(threadL) >= 0 || threadL.indexOf(rtcL) >= 0))) cand2.push(INDEX[k]);
     }
     if (cand2.length) return ccRender(cand2.slice(0, 8), 'rosca');
   }
@@ -1052,7 +1057,7 @@ async function busquedaMaestra() {
      La sacas gratis en https://console.groq.com/keys
      (empieza con "gsk_")
      ============================================================ */
-  var GROQ_KEY = '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';
+  var GROQ_KEY = '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';
   var GROQ_MODEL = 'groq/compound-mini';
   GROQ_KEY = (GROQ_KEY || '').trim();
 
