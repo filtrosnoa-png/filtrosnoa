@@ -525,8 +525,8 @@ let DATA=[];
 
 let IMGS={};
 
-const BORDER=['EMAFI','MAXFIL','PROFILTER','WIX','MANN','FARO','WEGA','FRAM','MARENO','MASTERFILT','HASTING','LANSS','TECNECO','SAKURA','MAHLE','TECFIL','PRIX','PUROLATOR','BALDWIN','FAMEL','FLEETGUARD','DONALDSON','RUTAFIL','OCUATRO','OEM','OTRAS','OTROS'];
-const BC={EMAFI:'#f0a500',MAXFIL:'#3a7ffc',PROFILTER:'#1ec98a',WIX:'#e0534a',MANN:'#c084fc',WEGA:'#38bdf8',FRAM:'#fb923c',MARENO:'#a3e635',MASTERFILT:'#f472b6',HASTING:'#e2b714',LANSS:'#a78bfa',TECNECO:'#34d399',FARO:'#fbbf24',SAKURA:'#f9a8d4',MAHLE:'#93c5fd',TECFIL:'#f87171',PRIX:'#6ee7b7',PUROLATOR:'#d946ef',BALDWIN:'#fb7185',FAMEL:'#a78bfa',FLEETGUARD:'#67e8f9',DONALDSON:'#818cf8',RUTAFIL:'#f59e0b',OCUATRO:'#2dd4bf',OEM:'#94a3b8',OTRAS:'#cbd5e1',OTROS:'#cbd5e1'};
+const BORDER=['EMAFI','MAXFIL','PROFILTER','WIX','MANN','FARO','WEGA','FRAM','MARENO','MASTERFILT','HASTING','LANSS','TECNECO','SAKURA','MAHLE','TECFIL','PRIX','PUROLATOR','BALDWIN','FAMEL','FLEETGUARD','DONALDSON','RUTAFIL','OCUATRO','FORD','MOTORCRAFT','JSFILTER','OEM','OTRAS','OTROS'];
+const BC={EMAFI:'#f0a500',MAXFIL:'#3a7ffc',PROFILTER:'#1ec98a',WIX:'#e0534a',MANN:'#c084fc',WEGA:'#38bdf8',FRAM:'#fb923c',MARENO:'#a3e635',MASTERFILT:'#f472b6',HASTING:'#e2b714',LANSS:'#a78bfa',TECNECO:'#34d399',FARO:'#fbbf24',SAKURA:'#f9a8d4',MAHLE:'#93c5fd',TECFIL:'#f87171',PRIX:'#6ee7b7',PUROLATOR:'#d946ef',BALDWIN:'#fb7185',FAMEL:'#a78bfa',FLEETGUARD:'#67e8f9',DONALDSON:'#818cf8',RUTAFIL:'#f59e0b',OCUATRO:'#2dd4bf',FORD:'#2563eb',MOTORCRAFT:'#0891b2',JSFILTER:'#84cc16',OEM:'#94a3b8',OTRAS:'#cbd5e1',OTROS:'#cbd5e1'};
 const IMG_BRANDS=['EMAFI','PROFILTER','MAXFIL','WIX','FARO','WEGA'];
 const PAGE_SIZE=30;
 let currentPage=1,filteredData=[],activeBrands=new Set(),openCard=null,lastQuery='';
@@ -873,7 +873,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 105 - hover muestra credito en PC, tap sigue funcionando en celular');
+console.log('FilterEQ version 106 - marcas FORD, JSFILTER agregadas + MOTORCRAFT arreglado (afectaba 100+ registros)');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -1108,7 +1108,7 @@ async function busquedaMaestra() {
      La sacas gratis en https://console.groq.com/keys
      (empieza con "gsk_")
      ============================================================ */
-  var GROQ_KEY = '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';
+  var GROQ_KEY = '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';
   var GROQ_MODEL = 'groq/compound-mini';
   GROQ_KEY = (GROQ_KEY || '').trim();
 
