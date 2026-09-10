@@ -24,11 +24,17 @@ header{background:var(--surface);border-bottom:2px solid #f0c03033;padding:0;pos
 
 .search-wrap{position:relative;flex:1;min-width:200px;max-width:520px}
 .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-#searchInput{width:100%;background:var(--card);border:2.5px solid var(--accent);border-radius:8px;padding:9px 36px 9px 36px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+#searchInput{width:100%;background:var(--card);border:2.5px solid var(--accent);border-radius:8px;padding:9px 62px 9px 36px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
 #searchInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,192,48,.25)}
 #searchInput::placeholder{color:var(--muted)}
-.clear-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;display:none;line-height:1;padding:2px}
+.clear-btn{position:absolute;right:34px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;display:none;line-height:1;padding:2px}
 .clear-btn.visible{display:block}
+.mic-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;line-height:1;border-radius:6px;transition:color .15s,background .15s}
+.mic-btn:hover{color:var(--accent);background:rgba(240,192,48,.1)}
+.mic-btn.listening{color:#ef4444;animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{opacity:1;transform:translateY(-50%) scale(1)}50%{opacity:.6;transform:translateY(-50%) scale(1.15)}}
+.voice-status{position:absolute;left:0;right:0;top:calc(100% + 4px);text-align:center;font-size:11px;color:var(--accent);background:var(--card);border:1px solid var(--accent);border-radius:6px;padding:4px 8px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:40}
+.voice-status.show{opacity:1}
 
 .stats{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .stats strong{color:var(--accent)}
@@ -193,7 +199,9 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
     max-width:100%;
     min-width:0;
   }
-  #searchInput{font-size:16px;padding:11px 36px 11px 38px} /* 16px prevents iOS zoom */
+  #searchInput{font-size:16px;padding:11px 62px 11px 38px} /* 16px prevents iOS zoom */
+  .mic-btn{right:6px}
+  .clear-btn{right:32px}
 
   /* Hide elements that waste space */
   .stats,.header-divider,.exclusive-badge{display:none}
@@ -487,6 +495,10 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="searchInput" placeholder="Código, marca, modelo de vehículo..." autocomplete="off" spellcheck="false" onfocus="onSearchFocus()">
       <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+      <button class="mic-btn" id="micBtn" onclick="toggleVoiceSearch()" title="Buscar por voz" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <div id="voiceStatus" class="voice-status"></div>
     </div>
     <div class="exclusive-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -633,6 +645,61 @@ function onSearchFocus(){
   var si=document.getElementById('searchInput');
   if(si&&si.value){si.value='';msActive=false;doSearch();}
 }
+
+// ===== Busqueda por voz =====
+var voiceRecognition=null, voiceListening=false;
+(function initVoiceSearch(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var micBtn=document.getElementById('micBtn');
+  if(!SR||!micBtn) return; // navegador sin soporte: el boton queda oculto
+  micBtn.style.display='flex';
+  voiceRecognition=new SR();
+  voiceRecognition.lang='es-AR';
+  voiceRecognition.continuous=false;
+  voiceRecognition.interimResults=false;
+  voiceRecognition.maxAlternatives=1;
+
+  voiceRecognition.onstart=function(){
+    voiceListening=true;
+    micBtn.classList.add('listening');
+    showVoiceStatus('Escuchando...');
+  };
+  voiceRecognition.onresult=function(ev){
+    var transcript=ev.results[0][0].transcript.trim();
+    var si=document.getElementById('searchInput');
+    if(si){
+      si.value=transcript;
+      collapseMedidaPanel();
+      msActive=false;
+      doSearch();
+    }
+    showVoiceStatus('Buscando: "'+transcript+'"',1800);
+  };
+  voiceRecognition.onerror=function(ev){
+    var msg='No se pudo escuchar. Intenta de nuevo.';
+    if(ev.error==='not-allowed'||ev.error==='service-not-allowed') msg='Permiso de microfono denegado.';
+    else if(ev.error==='no-speech') msg='No se detecto voz. Intenta de nuevo.';
+    showVoiceStatus(msg,2200);
+  };
+  voiceRecognition.onend=function(){
+    voiceListening=false;
+    micBtn.classList.remove('listening');
+  };
+})();
+function showVoiceStatus(text,autoHideMs){
+  var el=document.getElementById('voiceStatus');
+  if(!el) return;
+  el.textContent=text;
+  el.classList.add('show');
+  if(autoHideMs) setTimeout(function(){el.classList.remove('show');},autoHideMs);
+}
+function toggleVoiceSearch(){
+  if(!voiceRecognition) return;
+  if(voiceListening){ voiceRecognition.stop(); return; }
+  try{ voiceRecognition.start(); }
+  catch(e){ showVoiceStatus('No se pudo iniciar el microfono.',2000); }
+}
+
 function selectMedidaType(type){
   msType=type||null;
   var box=document.getElementById('msInputs');
@@ -873,7 +940,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 106 - marcas FORD, JSFILTER agregadas + MOTORCRAFT arreglado (afectaba 100+ registros)');
+console.log('FilterEQ version 107 - busqueda por voz agregada (microfono junto al buscador)');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
