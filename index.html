@@ -22,17 +22,18 @@ header{background:var(--surface);border-bottom:2px solid #f0c03033;padding:0;pos
 
 .header-divider{width:1px;height:36px;background:var(--border2);flex-shrink:0}
 
-.search-wrap{position:relative;flex:1;min-width:200px;max-width:520px}
+.search-row{display:flex;align-items:center;gap:7px;flex:1;min-width:200px;max-width:560px}
+.search-wrap{position:relative;flex:1;min-width:0}
 .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-#searchInput{width:100%;background:var(--card);border:2.5px solid var(--accent);border-radius:8px;padding:9px 62px 9px 36px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+#searchInput{width:100%;background:var(--card);border:2.5px solid var(--accent);border-radius:8px;padding:9px 36px 9px 36px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
 #searchInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,192,48,.25)}
 #searchInput::placeholder{color:var(--muted)}
-.clear-btn{position:absolute;right:34px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;display:none;line-height:1;padding:2px}
+.clear-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;display:none;line-height:1;padding:2px}
 .clear-btn.visible{display:block}
-.mic-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;line-height:1;border-radius:6px;transition:color .15s,background .15s}
-.mic-btn:hover{color:var(--accent);background:rgba(240,192,48,.1)}
-.mic-btn.listening{color:#ef4444;animation:micPulse 1.2s ease-in-out infinite}
-@keyframes micPulse{0%,100%{opacity:1;transform:translateY(-50%) scale(1)}50%{opacity:.6;transform:translateY(-50%) scale(1.15)}}
+.mic-btn{flex-shrink:0;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--card);border:2px solid var(--border2);color:var(--muted);cursor:pointer;border-radius:8px;transition:color .15s,background .15s,border-color .15s}
+.mic-btn:hover{color:var(--accent);border-color:var(--accent);background:rgba(240,192,48,.1)}
+.mic-btn.listening{color:#ef4444;border-color:#ef4444;background:rgba(239,68,68,.1);animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
 .voice-status{position:absolute;left:0;right:0;top:calc(100% + 4px);text-align:center;font-size:11px;color:var(--accent);background:var(--card);border:1px solid var(--accent);border-radius:6px;padding:4px 8px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:40}
 .voice-status.show{opacity:1}
 
@@ -193,15 +194,14 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
   .logo-text .sub{font-size:8px}
 
   /* Search takes full width on its own row */
-  .search-wrap{
+  .search-row{
     order:3;
     flex:1 1 100%;
     max-width:100%;
     min-width:0;
   }
-  #searchInput{font-size:16px;padding:11px 62px 11px 38px} /* 16px prevents iOS zoom */
-  .mic-btn{right:6px}
-  .clear-btn{right:32px}
+  #searchInput{font-size:16px;padding:11px 36px 11px 38px} /* 16px prevents iOS zoom */
+  .mic-btn{width:40px;height:40px}
 
   /* Hide elements that waste space */
   .stats,.header-divider,.exclusive-badge{display:none}
@@ -491,14 +491,16 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
       </div>
     </a>
     <div class="header-divider"></div>
-    <div class="search-wrap">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="searchInput" placeholder="Código, marca, modelo de vehículo..." autocomplete="off" spellcheck="false" onfocus="onSearchFocus()">
-      <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Código, marca, modelo de vehículo..." autocomplete="off" spellcheck="false" onfocus="onSearchFocus()">
+        <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+        <div id="voiceStatus" class="voice-status"></div>
+      </div>
       <button class="mic-btn" id="micBtn" onclick="toggleVoiceSearch()" title="Buscar por voz" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
-      <div id="voiceStatus" class="voice-status"></div>
     </div>
     <div class="exclusive-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -940,7 +942,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 107 - busqueda por voz agregada (microfono junto al buscador)');
+console.log('FilterEQ version 108 - fix layout microfono: ahora es boton al lado, no superpuesto');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
