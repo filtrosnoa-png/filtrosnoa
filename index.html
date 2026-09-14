@@ -106,6 +106,10 @@ main{flex:1;padding:16px 20px;max-width:1400px;width:100%;margin:0 auto}
 .ms-panel.open{display:block}
 .ms-types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .ms-select{background:var(--card);border:1.5px solid var(--accent);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;outline:none;min-width:200px}
+.ms-subtype-row{display:flex;gap:6px;margin-bottom:8px}
+.ms-sub-btn{background:var(--card);border:1.5px solid var(--border2);color:var(--text);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
+.ms-sub-btn:hover{background:var(--surface)}
+.ms-sub-btn.sel{background:var(--accent);color:#1a1200;border-color:var(--accent)}
 .ms-select:focus{box-shadow:0 0 0 3px rgba(240,192,48,.2)}
 .ms-type-btn{background:var(--card);border:1.5px solid var(--border2);color:var(--text);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
 .ms-type-btn:hover{background:var(--surface)}
@@ -216,6 +220,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:10px
   .ms-toggle{width:100%;text-align:center;font-size:13px;padding:9px 14px}
   .ms-panel.open{margin-top:6px;display:flex;flex-direction:column;gap:8px}
   .ms-select{width:100%;min-width:0;font-size:15px;padding:10px 12px}
+  .ms-sub-btn{flex:1;text-align:center;padding:9px 6px;font-size:13px}
   .ms-inputs{flex-wrap:wrap;gap:8px;margin:0}
   .ms-field{flex:1 1 130px;padding:6px 10px;gap:6px;justify-content:space-between}
   .ms-field-rosca{flex:1 1 100%}
@@ -549,9 +554,9 @@ const cardImgBrand={};
 function getFilterType(rec){
   var all=[rec.b.EMAFI||'',rec.b.PROFILTER||'',rec.b.MAXFIL||''].join(' ').toUpperCase();
   if(/MAH[ ]?\d|MHC[ ]?\d|CF-/.test(all)) return 'cabin';
-  if(/EAM[ ]?\d|AF-|EAH[ ]?\d|EFPA/.test(all)) return 'air';
+  if(/EAM[ ]?\d|AF-|EFPA/.test(all)) return 'air';
   if(/EFC[ ]?\d|FF-|EC\d|UC\d/.test(all)) return 'fuel';
-  if(/ELM[ ]?\d|OF-|UL\d|EL\d|ULF|EUS[ ]?\d|EFO[ ]?\d/.test(all)) return 'oil';
+  if(/ELM[ ]?\d|OF-|UL\d|EL\d|ULF|EUS[ ]?\d|EFO[ ]?\d|EAH[ ]?\d|EA[ ]?\d/.test(all)) return 'oil';
   var extra=((rec.d||'')+' '+((rec.m&&rec.m.t)||'')).toLowerCase();
   if(/hidraulic|hydraulic/.test(extra)) return 'hydraulic';
   if(/\baceite\b|\boil\b/.test(extra)) return 'oil';
@@ -702,24 +707,52 @@ function toggleVoiceSearch(){
   catch(e){ showVoiceStatus('No se pudo iniciar el microfono.',2000); }
 }
 
+var msSubType=null;
 function selectMedidaType(type){
-  msType=type||null;
+  msType=type||null;msSubType=null;
   var box=document.getElementById('msInputs');
   if(!type){box.innerHTML='';return;}
+  if(type==='oil'||type==='fuel'){
+    box.innerHTML='<div class="ms-subtype-row">'
+      +'<button class="ms-sub-btn" onclick="selectMedidaSubType(\'cartucho\',this)">Cartucho</button>'
+      +'<button class="ms-sub-btn" onclick="selectMedidaSubType(\'sellado\',this)">Sellado</button>'
+      +'</div><div id="msSubInputs"></div>';
+    return;
+  }
+  renderMedidaFields(type);
+}
+function selectMedidaSubType(sub,btn){
+  msSubType=sub;
+  var btns=document.querySelectorAll('.ms-sub-btn');
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove('sel');
+  if(btn)btn.classList.add('sel');
+  renderMedidaFields(msType,sub,'msSubInputs');
+}
+function renderMedidaFields(type,sub,targetId){
+  var box=document.getElementById(targetId||'msInputs');
   function numF(label,id){return '<div class="ms-field"><span class="ms-field-label">'+label+'</span><div class="ms-input-wrap"><input type="number" class="ms-input" id="'+id+'" placeholder="" min="1" max="9999"><span class="ms-unit">mm</span></div></div>';}
   var btns2='<button class="ms-btn" onclick="doMedidaSearch()">Buscar</button><button class="ms-clear visible" onclick="clearMedidaSearch()">&#10005; Limpiar</button>';
   if(type==='tubular'){
     box.innerHTML=numF('Alto','msFieldA')+numF('Ancho (&#216;ext)','msFieldB')+btns2;
   }else if(type==='panel'||type==='cabin'){
     box.innerHTML=numF('Largo','msFieldA')+numF('Ancho','msFieldB')+btns2;
-  }else{
+  }else if(type==='hydraulic'){
+    box.innerHTML='<div class="ms-field ms-field-rosca"><span class="ms-field-label">Rosca</span><input type="text" class="ms-input ms-input-text" id="msFieldRosca" placeholder="ej: 3/4-16, M20x1.5, 27x2"></div>'+btns2;
+  }else if(sub==='cartucho'){
+    box.innerHTML=numF('Alto','msFieldA')+numF('Ancho','msFieldB')+btns2;
+  }else if(sub==='sellado'){
     box.innerHTML='<div class="ms-field ms-field-rosca"><span class="ms-field-label">Rosca</span><input type="text" class="ms-input ms-input-text" id="msFieldRosca" placeholder="ej: 3/4-16, M20x1.5, 27x2"></div>'+btns2;
   }
 }
+function isCartucho(rec){
+  var extra=((rec.d||'')+' '+((rec.m&&rec.m.t)||'')).toLowerCase();
+  return extra.indexOf('cartucho')>=0;
+}
 function doMedidaSearch(){
   if(!msType){alert('Elegi un tipo de filtro');return;}
-  // --- Busqueda por ROSCA (aceite / combustible / hidraulico) ---
-  if(msType==='oil'||msType==='fuel'||msType==='hydraulic'){
+  if((msType==='oil'||msType==='fuel')&&!msSubType){alert('Elegi Cartucho o Sellado');return;}
+  // --- Busqueda por ROSCA (sellado: aceite/combustible/hidraulico) ---
+  if(msType==='hydraulic'||((msType==='oil'||msType==='fuel')&&msSubType==='sellado')){
     var el=document.getElementById('msFieldRosca');
     var roscaVal=el?el.value.trim():'';
     if(!roscaVal){alert('Ingresa la rosca');return;}
@@ -733,8 +766,8 @@ function doMedidaSearch(){
       var matchesThread=(rtc===thread||rtc.indexOf(thread)>=0||(rtc.length>=5&&thread.indexOf(rtc)>=0)||(rtcL.length>=3&&threadL.length>=3&&(rtcL.indexOf(threadL)>=0||threadL.indexOf(rtcL)>=0)));
       if(!matchesThread)return false;
       var ft=getFilterType(entry.rec);
-      if(msType==='oil')return ft==='oil';
-      if(msType==='fuel')return ft==='fuel';
+      if(msType==='oil')return ft==='oil'&&!isCartucho(entry.rec);
+      if(msType==='fuel')return ft==='fuel'&&!isCartucho(entry.rec);
       return ft!=='oil'&&ft!=='fuel'&&ft!=='air'&&ft!=='cabin'; // hidraulico = otros roscados
     }).map(function(entry){return{entry:entry,mb:[],ia:false,ir:false,mdiff:0,mdim:undefined};});
     if(activeBrands.size>0){filteredData=filteredData.filter(function(r){return r.entry.ct.some(function(t){return activeBrands.has(t.brand);});});}
@@ -742,8 +775,44 @@ function doMedidaSearch(){
     document.getElementById('searchInput').value='';
     document.getElementById('clearBtn').className='clear-btn';
     renderPage();
-    var tnR={oil:'aceite',fuel:'combustible',hydraulic:'hidraulicos'}[msType]||'';
+    var tnR={oil:'aceite sellado',fuel:'combustible sellado',hydraulic:'hidraulicos'}[msType]||'';
     document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros '+tnR+' con rosca ~'+roscaVal;
+    return;
+  }
+  // --- Busqueda por MEDIDAS: cartucho (aceite/combustible) ---
+  if((msType==='oil'||msType==='fuel')&&msSubType==='cartucho'){
+    var aElC=document.getElementById('msFieldA'),bElC=document.getElementById('msFieldB');
+    var aValC=parseFloat(aElC?aElC.value:''),bValC=parseFloat(bElC?bElC.value:'');
+    var hasAC=!isNaN(aValC)&&aValC>0,hasBC=!isNaN(bValC)&&bValC>0;
+    if(!hasAC&&!hasBC){alert('Ingresa al menos una medida en mm');return;}
+    msActive=true;
+    filteredData=INDEX.filter(function(entry){
+      var rec=entry.rec,m=rec.m;if(!m)return false;
+      var ft=getFilterType(rec);
+      if(msType==='oil'&&(ft!=='oil'||!isCartucho(rec)))return false;
+      if(msType==='fuel'&&(ft!=='fuel'||!isCartucho(rec)))return false;
+      var f1=parseFirstNum(m.h),f2=parseFirstNum(m.d1);
+      if(hasAC&&f1===null)return false;
+      if(hasBC&&f2===null)return false;
+      return true;
+    }).map(function(entry){
+      var m=entry.rec.m;
+      var f1=parseFirstNum(m.h),f2=parseFirstNum(m.d1);
+      var diff=0;
+      if(hasAC)diff+=Math.abs(f1-aValC);
+      if(hasBC)diff+=Math.abs(f2-bValC);
+      return{entry:entry,mb:[],ia:false,ir:false,mdiff:diff,mdim:f1!==null?f1:f2};
+    }).sort(function(a,b){return a.mdiff-b.mdiff;});
+    if(activeBrands.size>0){filteredData=filteredData.filter(function(r){return r.entry.ct.some(function(t){return activeBrands.has(t.brand);});});}
+    lastQuery='';currentPage=1;openCard=null;
+    document.getElementById('searchInput').value='';
+    document.getElementById('clearBtn').className='clear-btn';
+    renderPage();
+    var tnC={oil:'aceite cartucho',fuel:'combustible cartucho'}[msType];
+    var partsC=[];
+    if(hasAC)partsC.push('Alto~'+aValC+'mm');
+    if(hasBC)partsC.push('Ancho~'+bValC+'mm');
+    document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros '+tnC+' '+partsC.join(', ');
     return;
   }
   // --- Busqueda por MEDIDAS (tubular / panel / habitaculo) ---
@@ -784,7 +853,7 @@ function doMedidaSearch(){
   document.getElementById('stats').innerHTML='<strong>'+filteredData.length+'</strong> filtros '+tn+' '+parts.join(', ');
 }
 function clearMedidaSearch(){
-  msActive=false;msType=null;
+  msActive=false;msType=null;msSubType=null;
   var sel=document.getElementById('msTypeSelect');if(sel)sel.value='';
   var box=document.getElementById('msInputs');if(box)box.innerHTML='';
   filteredData=[];lastQuery='';currentPage=1;openCard=null;
@@ -942,7 +1011,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 109 - prefijo EFO agregado como aceite (EMAFI)');
+console.log('FilterEQ version 111 - EA/EAH MAXFIL = aceite; corregidos 46 registros EC mal etiquetados');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
