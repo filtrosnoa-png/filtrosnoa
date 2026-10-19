@@ -927,10 +927,15 @@ function doSearch(){
       x._s=best;x._ld=best===3?0:ld;
     });
     filteredData.sort(function(a,b){return (a._s-b._s)||(a._ld-b._ld)||(a.entry.i-b.entry.i);});
-  }
+    if(raw!==_simQuery){_simQuery=raw;_showSimilar=false;}
+    var exN=filteredData.filter(function(x){return x._s===0;}).length;
+    if(exN>0&&exN<filteredData.length&&!_showSimilar){_hiddenSim=filteredData.length-exN;filteredData=filteredData.filter(function(x){return x._s===0;});}
+    else _hiddenSim=0;
+  } else _hiddenSim=0;
   currentPage=1;openCard=null;renderPage();
-  document.getElementById('stats').innerHTML=`<strong>${filteredData.length.toLocaleString()}</strong> resultado${filteredData.length!==1?'s':''}`;
+  document.getElementById('stats').innerHTML=`<strong>${filteredData.length.toLocaleString()}</strong> resultado${filteredData.length!==1?'s':''}`+(_hiddenSim?` · <a href="#" onclick="_showSimilar=true;doSearch();return false;" style="color:var(--accent,#f0a500);text-decoration:underline">ver ${_hiddenSim} similar${_hiddenSim!==1?'es':''}</a>`:'');
 }
+var _simQuery='',_showSimilar=false,_hiddenSim=0;
 function clearSearch(){document.getElementById('searchInput').value='';doSearch();document.getElementById('searchInput').focus()}
 
 function switchImgBrand(cid,brand){
@@ -1026,7 +1031,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 115 - busqueda ordena primero el codigo exacto');
+console.log('FilterEQ version 116 - busqueda muestra solo codigo exacto (con link para ver similares)');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
