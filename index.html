@@ -914,6 +914,20 @@ function doSearch(){
     if(activeBrands.size>0&&!entry.ct.some(t=>activeBrands.has(t.brand)))return null;
     if(!raw)return{entry,mb:[],ia:false,ir:false,mdiff:undefined,mdim:undefined};const r=matchRecord(entry,raw);return r.match?{entry,...r}:null;
   }).filter(Boolean);
+  if(raw){
+    const qn=norm(raw);
+    filteredData.forEach(function(x){
+      var best=3,ld=0;
+      for(var k=0;k<x.entry.ct.length;k++){
+        var n=x.entry.ct[k].n;if(!qn||n.indexOf(qn)<0)continue;
+        if(n===qn){best=0;ld=0;break;}
+        var s=n.indexOf(qn)===0?1:2,d=n.length-qn.length;
+        if(s<best||(s===best&&d<ld)){best=s;ld=d;}
+      }
+      x._s=best;x._ld=best===3?0:ld;
+    });
+    filteredData.sort(function(a,b){return (a._s-b._s)||(a._ld-b._ld)||(a.entry.i-b.entry.i);});
+  }
   currentPage=1;openCard=null;renderPage();
   document.getElementById('stats').innerHTML=`<strong>${filteredData.length.toLocaleString()}</strong> resultado${filteredData.length!==1?'s':''}`;
 }
@@ -1012,7 +1026,7 @@ function renderPage(){
 function setSearch(q){document.getElementById('searchInput').value=q;doSearch()}
 function toggle(idx){openCard=openCard===idx?null:idx;renderPage()}
 function gp(p){currentPage=p;openCard=null;renderPage();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('FilterEQ version 114 - marca RACOR agregada');
+console.log('FilterEQ version 115 - busqueda ordena primero el codigo exacto');
 document.getElementById('stats').innerHTML='Cargando catálogo...';
 fetch('filterEQ_data.json?v=68').then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status);
